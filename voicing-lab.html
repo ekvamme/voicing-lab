@@ -896,10 +896,30 @@ async function playBarMelody(bi){ // hear the melody that falls within this chor
 async function tapNote(midi){
   if(typeof Tone==="undefined") return;
   await Tone.start(); initAudio();
-  const synth = pianoReady?piano:(midi<noteMidi("C",3)?bassSynth:chordSynth);
+  // one instrument for the whole keyboard: real piano once loaded, same synth for
+  // every octave until then (the old low-note sine fallback sounded like a different world)
+  const synth = pianoReady?piano:chordSynth;
   synth.triggerAttackRelease(Tone.Frequency(midi,"midi").toNote(),"8n");
   const k=keyByMidi[midi];
   if(k){k.style.color="var(--brass)";k.classList.add("lit");setTimeout(()=>lightChord(curBar),170);}
+}
+/* conveyor scroll: while playing, the sheet and the graph glide continuously so the
+   next bars are always sliding into view — read ahead and keep playing. */
+let scrollRAF=null, lastTick=null;
+function autoScroll(){
+  if(!playing){ scrollRAF=null; return; }
+  if(lastTick&&TOTBEATS){
+    const spb=60/Tone.Transport.bpm.value;
+    const b=(lastTick.beat+(Tone.now()-lastTick.at)/spb)%TOTBEATS;
+    const sh=document.querySelector(".sheetscroll");
+    if(sh){ const x=SH.padL+Math.floor(b/4)*SH.colW+16+(b%4)*SH.beatW;
+      sh.scrollLeft=Math.max(0, x - sh.clientWidth*0.35); }
+    const gh=document.querySelector(".graphscroll");
+    if(gh&&BEATMAP.length){ const ei=BEATMAP[Math.floor(b)]??0, ev=CH[ei];
+      const gx=G.padL+(ei+(b-ev.start)/ev.beats)*G.colW;
+      gh.scrollLeft=Math.max(0, gx - gh.clientWidth*0.35); }
+  }
+  scrollRAF=requestAnimationFrame(autoScroll);
 }
 async function startPlay(){
   if(typeof Tone==="undefined"){ document.getElementById("play").innerHTML="⚠ no audio";
@@ -907,9 +927,12 @@ async function startPlay(){
   await Tone.start(); initAudio();
   playing=true; document.getElementById("play").innerHTML="❚❚ Stop";
   beatCounter=CH[curBar].start;
+  lastTick=null;
+  if(scrollRAF===null) scrollRAF=requestAnimationFrame(autoScroll);
   loopId=Tone.Transport.scheduleRepeat((time)=>{
     const b=beatCounter%TOTBEATS, ei=BEATMAP[b], ev=CH[ei];
     const spb=Tone.Time("4n").toSeconds();
+    lastTick={beat:b, at:time};
     if(showBass){ const bn=ev.bass[b-ev.start]; bassInstr().triggerAttackRelease(Tone.Frequency(bn,"midi").toNote(),"4n",time); }
     if(b===ev.start) // chords strike exactly where they fall in the measure, held for their real length
       chordInstr().triggerAttackRelease(chordNotes(ei), Math.max(0.3, ev.beats*spb*(showBass?0.8:0.95)), time);
@@ -924,6 +947,7 @@ async function startPlay(){
 function stopPlay(){
   playing=false; document.getElementById("play").innerHTML="► Play";
   if(loopId!==null){Tone.Transport.clear(loopId);loopId=null;} Tone.Transport.stop();
+  if(scrollRAF!==null){ cancelAnimationFrame(scrollRAF); scrollRAF=null; } lastTick=null;
   lightChord(curBar);
 }
 
