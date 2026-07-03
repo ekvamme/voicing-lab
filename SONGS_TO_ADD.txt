@@ -7,6 +7,8 @@ there. Details & legal notes in PUBLIC_DOMAIN_STANDARDS.md.
 
 DONE
   Sweet Georgia Brown (1925) — from Nottingham Music Database ABC
+  Georgia on My Mind (1930) — from Ian Hayden ABC collection (no dim7 needed;
+    that chart avoids them — engine unchanged)
 
 BEST NEXT PICKS (great teaching value, likely in ABC collections)
   St. Louis Blues (1914, W.C. Handy) — blues + habanera section, trad staple

@@ -1080,6 +1080,65 @@ const IMPORTED=[
         [{b:0,d:2,m:69},{b:2,d:1,m:74},{b:3,d:1,m:71}],             // 31 A2 D5 B (Sweet Geor-gia)
         [{b:0,d:3,m:67}]                                             // 32 G4 (Brown — loops to the top)
       ];})() },
+  { name:"Georgia on My Mind", note:"1930 · Hoagy Carmichael · PUBLIC DOMAIN · F", key:"F",
+    // Machine-read from the Ian Hayden ABC collection (abcnotation.com → github.com/
+    // ian-hayden/abc-music-files, "Jazz songs/Georgia on my Mind", K:F L:1/4), parsed as
+    // text. Simplifications: Dm7/C slash bass merged into Dm7 (the engine picks its own
+    // inversions — that's the point of the app); the passing E♭7 on the last half-beat of
+    // bar 12 dropped (model is 1-beat resolution); B♭/C (C9sus) encoded as C7; B♭ triad as B♭6.
+    specs:(()=>{const bar=(...cs)=>cs;
+      const A1=[{r:"F",q:"maj7",rn:"Imaj7"}],
+            A2=[{r:"E",q:"m7",rn:"vii7",beats:1},{r:"A",q:"dom7",rn:"V7/vi",beats:3}],
+            A3=[{r:"D",q:"m7",rn:"vi"}],
+            A4=[{r:"B",q:"m7",rn:"♯iv7"}],
+            A5=[{r:"A",q:"m7",rn:"iii7",beats:2},{r:"D",q:"dom7",rn:"V7/ii",beats:2}],
+            A6=[{r:"G",q:"m7",rn:"ii7",beats:2},{r:"C",q:"dom7",rn:"V7",beats:2}],
+            BR=[{r:"D",q:"m7",rn:"vi",beats:2},{r:"A",q:"dom7",rn:"V7/vi",beats:2}];
+      return [
+        ...A1,...A2,...A3,...A4,...A5,...A6,...A5,...A6,            // A (1-8)
+        ...A1,...A2,...A3,...A4,...A5,...A6,                        // A' (9-14)
+        {r:"F",q:"maj7",rn:"Imaj7",beats:2},{r:"Bb",q:"dom7",rn:"IV7",beats:2},   // 15
+        {r:"F",q:"6",rn:"I6",beats:1},{r:"A",q:"dom7",rn:"V7/vi",beats:3},        // 16
+        ...BR,                                                       // 17
+        {r:"D",q:"m7",rn:"vi",beats:1},{r:"Bb",q:"6",rn:"♭VI6",beats:1},{r:"A",q:"dom7",rn:"V7/vi",beats:2}, // 18
+        ...BR,                                                       // 19
+        {r:"C",q:"dom7",rn:"V7sus",beats:2},{r:"G",q:"dom7",rn:"V7/V",beats:2},   // 20 (B♭/C → C7)
+        ...BR,                                                       // 21
+        {r:"D",q:"m7",rn:"vi",beats:1},{r:"B",q:"dom7",rn:"♯IV7",beats:1},{r:"E",q:"dom7",rn:"VII7",beats:2}, // 22 chromatic V-chain
+        {r:"A",q:"dom7",rn:"V7/vi",beats:2},{r:"D",q:"dom7",rn:"V7/ii",beats:2},  // 23
+        ...A6,                                                       // 24
+        ...A1,...A2,...A3,...A4,...A5,...A6,                        // A'' (25-30)
+        ...A1,                                                       // 31
+        ...A6                                                        // 32 → loops home
+      ];})(),
+    melody:(()=>{
+      const b1=[{b:0,d:1,m:69},{b:1,d:3,m:72}],                       // A4 C5·  ("Georgia…")
+            b2=[{b:0,d:1,m:69},{b:1,d:3,m:67}],                       // A4 G4·
+            b3=[{b:1,d:1,m:69},{b:2,d:1,m:74},{b:3,d:1,m:69}],        // (rest) A4 D5 A4
+            b4=[{b:0,d:3,m:67},{b:3,d:.5,m:65},{b:3.5,d:.5,m:67}],    // G4· F G
+            b5=[{b:0,d:1,m:69},{b:1,d:1,m:72},{b:2,d:1,m:76},{b:3,d:1,m:74}],
+            b6a=[{b:0,d:1,m:70},{b:1,d:1,m:74},{b:2,d:1,m:69},{b:3,d:1,m:67}], // B♭ D5 A G
+            b6b=[{b:0,d:1,m:70},{b:1,d:1,m:62},{b:2,d:1,m:69},{b:3,d:1,m:69}], // B♭ D4 A A
+            br=[{b:0,d:1,m:62},{b:1,d:1,m:65},{b:2,d:1,m:67},{b:3,d:1,m:69}];  // D F G A
+      return [
+        b1,b2,b3,b4,b5,b6a,
+        [{b:0,d:4,m:72}],                                             // 7  C5 held
+        [{b:0,d:.5,m:74},{b:.5,d:.5,m:74},{b:1,d:.5,m:74},{b:1.5,d:.5,m:74},{b:2,d:2,m:68}], // 8 D5×4, A♭4
+        b1,b2,b3,b4,b5,b6b,
+        [{b:0,d:4,m:65}],                                             // 15 F held
+        [{b:0,d:1,m:65},{b:1,d:1,m:65}],                              // 16 F F (rest)
+        br,
+        [{b:0,d:1,m:65},{b:1,d:1,m:62},{b:2,d:2,m:65}],               // 18 F D F·
+        br,
+        [{b:0,d:1,m:72},{b:1,d:1,m:69},{b:2,d:2,m:71}],               // 20 C5 A B♮
+        br,
+        [{b:0,d:1,m:72},{b:1,d:1,m:74},{b:2,d:1.5,m:76},{b:3.5,d:.5,m:74}], // 22 C5 D5 E5· D5
+        [{b:0,d:1,m:72},{b:1,d:1,m:69},{b:2,d:1,m:72},{b:3,d:1,m:69}],      // 23
+        [{b:0,d:2,m:69},{b:2,d:2,m:68}],                              // 24 A4 A♭4
+        b1,b2,b3,b4,b5,b6b,
+        [{b:0,d:4,m:65}],                                             // 31 F whole
+        [{b:0,d:2,m:65}]                                              // 32 F (rest → top)
+      ];})() },
   { name:"Take the A Train", note:"Real Book 1 · p.421 · C major (AABA)", specs:[
     {r:"C",q:"maj7",rn:"Imaj7"},{r:"C",q:"maj7",rn:"Imaj7"},{r:"D",q:"dom7",rn:"V7/V"},{r:"D",q:"dom7",rn:"V7/V"},
     {r:"D",q:"m7",rn:"ii"},{r:"G",q:"dom7",rn:"V7"},{r:"C",q:"maj7",rn:"Imaj7"},{r:"C",q:"maj7",rn:"Imaj7"},
@@ -1087,6 +1146,10 @@ const IMPORTED=[
     {r:"D",q:"dom7",rn:"V7/V"},{r:"D",q:"dom7",rn:"V7/V"},{r:"D",q:"m7",rn:"ii"},{r:"G",q:"dom7",rn:"V7"} ] }
 ];
 const THEORY_TEXT={
+  "Georgia on My Mind":{
+    title:"Georgia on My Mind — a ballad that never sits still",
+    body:`<b>Hoagy Carmichael</b> wrote it in 1930 (lyric by Stuart Gorrell); Ray Charles made it immortal in 1960, and it's been Georgia's state song since 1979. <b>The composition entered the US public domain on January 1, 2026.</b> It's a 32-bar <b>AABA in F</b>.<br><br>The magic is how restless the harmony is under a calm melody: almost every bar changes chords mid-measure. The A section opens Imaj7, then immediately reaches for the relative minor with <b style="color:var(--brass)">Em7→A7 pulling toward Dm</b>, lands on the chromatic <b>♯iv (Bm7)</b>, and walks home through the circle — iii→VI7→ii→V7, two beats each. Watch the <span style="color:var(--hold)">guide tones drip down by half steps</span> through that chain. The bridge sits in the relative minor (Dm7↔A7 rocking), then escapes with the tune's boldest move: a <b style="color:var(--brass)">chromatic chain of dominants B7→E7→A7→D7</b>, one V7 tumbling into the next, until ii–V7 sets up the last A.<br><br><i>Melody and changes machine-read from the Ian Hayden ABC collection (abcnotation.com), parsed as text. Simplified: slash-bass voicings merged (the engine chooses inversions itself) and one half-beat passing E♭7 omitted.</i>`
+  },
   "Sweet Georgia Brown":{
     title:"Sweet Georgia Brown — dominants around the circle",
     body:`Written in 1925 by <b>Maceo Pinkard</b> (with Ben Bernie and Kenneth Casey credited), it's been a jam-session anthem for a century — the Globetrotters' whistled theme, Bird's and Bud Powell's warhorse, and the parent of contrafacts like Miles's "Dig" and Monk's "Bright Mississippi." <b>The composition is public domain in the US.</b><br><br>The whole first half is <b style="color:var(--brass)">nothing but dominant 7ths marching around the circle of fifths</b>: VI7→II7→V7→I (E7→A7→D7→G). Each chord spends four bars pulling into the next — watch the circle panel hop counter-clockwise and the <span style="color:var(--hold)">guide tones slide by half steps</span>. Mid-form there's a wink of a tag (G→D7→G→B7, "you know I don't lie… <i>Not much!</i>"), the second half detours to the relative minor (Em ↔ its dominant B7), and the ending stacks a chromatic push (D–D♯–E over B7→E7) onto the two-beat circle A7→D7→G. The melody is two cells sequenced down the circle with each chord: a rising figure that targets each chord's color tone (G♯ over E7, G♮ over A7, F♯ over D7) and a falling answer from the high octave (E5–B–G♯ → held E; E5–C♯–B → A; D5–A–F♯ → D).<br><br><i>Melody and changes machine-read from the Nottingham Music Database's ABC transcription (trad, key G) — parsed as text, not eyeballed from scans. The 1925 Remick plates (USC Tin Pan Alley IIIF, item 4929) differ in ornamental detail; the ABC reflects the tune as commonly played.</i>`
