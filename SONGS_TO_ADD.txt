@@ -1,0 +1,55 @@
+SONGS WE CAN ADD TO VOICING LAB
+================================
+All compositions public domain in the US (published 1930 or earlier).
+Sourcing rule: machine-readable transcriptions only (ABC / MusicXML) — no
+reading from scans. Check abcnotation.com first; trad-jazz tunes are usually
+there. Details & legal notes in PUBLIC_DOMAIN_STANDARDS.md.
+
+DONE
+  Sweet Georgia Brown (1925) — from Nottingham Music Database ABC
+
+BEST NEXT PICKS (great teaching value, likely in ABC collections)
+  St. Louis Blues (1914, W.C. Handy) — blues + habanera section, trad staple
+  Tea for Two (1924, Youmans) — the classic ii-V oscillation
+  Bye Bye Blackbird (1926) — beginner-friendly AABA
+  After You've Gone (1918) — early-jazz iv-I motion
+  (Back Home Again in) Indiana (1917) — parent tune of "Donna Lee"
+  Avalon (1920) — cycle-of-dominants like SGB
+  Whispering (1920) — parent tune of "Groovin' High"
+  Tiger Rag (1917) — trad session warhorse
+  Ja-Da (1918) — simple, fun, very likely in ABC
+  Royal Garden Blues (1919) — trad blues standard
+
+THE 1930 CLASS (public domain since Jan 1, 2026)
+  I Got Rhythm (Gershwin) — rhythm changes; highest priority of these
+  Georgia on My Mind (Carmichael) — needs dim7 quality added to the engine
+  Body and Soul (Green) — the ballad; bridge modulates, great for key work
+  On the Sunny Side of the Street (McHugh/Fields)
+  Exactly Like You (McHugh/Fields) — easy, good Beginner-tier tune
+  But Not for Me (Gershwin)
+  Embraceable You (Gershwin)
+  Love for Sale (Porter) — 64-bar minor/major study
+  Get Happy (Arlen)
+  Memories of You (Blake)
+
+MORE SOLID OPTIONS (1920s)
+  Sweet Sue (1928) · Ain't Misbehavin' (1929) · Honeysuckle Rose (1929)
+  What Is This Thing Called Love (1929) · Someone to Watch Over Me (1926)
+  The Man I Love (1924) · Oh Lady Be Good (1924) · Fascinating Rhythm (1924)
+  It Had to Be You (1924) · Dinah (1925) · Five Foot Two (1925)
+  Limehouse Blues (1922) · Charleston (1923) · China Boy (1922)
+  My Blue Heaven (1927) · Blue Skies (1927) · 'S Wonderful (1927)
+  Basin Street Blues (1928) · I Can't Give You Anything but Love (1928)
+
+NOT YET — STILL UNDER US COPYRIGHT (composition)
+  Mood Indigo, All of Me, Out of Nowhere, Just Friends ....... free Jan 1, 2027
+  Night and Day (2028) · Sophisticated Lady (2029) · Summertime (2031)
+  Take the A Train (2037) · Autumn Leaves (~2041) · Blue Bossa (2059)
+  (These three stay chord-symbols-only in the app — no melodies.)
+
+ENGINE NOTES FOR NEW TUNES
+  - dim7 quality needed for: Georgia on My Mind, and most 1920s tunes' passing
+    chords if we want their full harmony (4 notes; small QUAL table addition)
+  - Tunes with pickup-bar melodies (e.g. St. Louis Blues) may need an anacrusis
+    field in the melody model
+  - Verse vs. chorus: encode the CHORUS only (that's the jazz-standard part)

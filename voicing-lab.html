@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Voicing Lab">
+<meta name="theme-color" content="#1c1714">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Voicing Lab — Walking the Chords with Inversions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<style>
+  :root{
+    --bg:#1c1714; --panel:#261f1a; --panel2:#2f2620; --line:#3d322a;
+    --ink:#efe7da; --muted:#9a8c7c; --brass:#d8a24a;
+    --v0:#e8633e; --v1:#f0a93a; --v2:#45b8c4; --v3:#7c8cf0; --bass:#c9a26a;
+    --hold:#e9c46a; --step:#86c46b; --leap:#d97a52;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:radial-gradient(1200px 600px at 70% -10%, #2a211b 0%, transparent 60%), var(--bg);
+    color:var(--ink); font-family:"Space Grotesk",system-ui,sans-serif; -webkit-font-smoothing:antialiased;
+    padding:28px 20px 48px}
+  .wrap{max-width:1060px; margin:0 auto}
+  header{margin-bottom:6px}
+  .eyebrow{font-family:"JetBrains Mono",monospace; font-size:11px; letter-spacing:.28em; text-transform:uppercase;
+    color:var(--brass); margin:0 0 8px}
+  h1{font-family:"Fraunces",Georgia,serif; font-weight:900; font-size:clamp(30px,5vw,46px); line-height:1.02;
+    margin:0 0 10px; letter-spacing:-.01em}
+  .sub{color:var(--muted); max-width:64ch; font-size:15px; line-height:1.5; margin:0}
+
+  .controls{display:flex; flex-wrap:wrap; gap:18px; align-items:flex-end; background:var(--panel);
+    border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin:22px 0 14px}
+  .group{display:flex; flex-direction:column; gap:7px}
+  .group > label{font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--muted)}
+  .seg{display:inline-flex; background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:3px; gap:2px}
+  .seg button{font-family:"Space Grotesk"; font-size:13px; font-weight:500; color:var(--muted); background:transparent;
+    border:0; padding:7px 12px; border-radius:6px; cursor:pointer; white-space:nowrap; transition:.15s}
+  .seg button:hover{color:var(--ink)}
+  .seg button[aria-pressed="true"]{background:var(--brass); color:#241a10; font-weight:700}
+  .seg.mode button[aria-pressed="true"]{background:var(--ink); color:var(--bg)}
+  .transport{display:flex; gap:8px; align-items:center}
+  .tbtn{font-family:"Space Grotesk"; font-weight:700; font-size:14px; color:var(--ink); background:var(--panel2);
+    border:1px solid var(--line); border-radius:9px; padding:9px 13px; cursor:pointer; transition:.15s; min-width:42px}
+  .tbtn:hover{border-color:var(--brass); color:var(--brass)}
+  .tbtn.play{background:var(--brass); color:#241a10; border-color:var(--brass)}
+  .tbtn.play:hover{filter:brightness(1.08); color:#241a10}
+  .tbtn.on{background:var(--step); color:#11210e; border-color:var(--step); animation:vpulse 1.4s ease-in-out infinite}
+  @keyframes vpulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--step) 60%,transparent)}50%{box-shadow:0 0 0 6px transparent}}
+  .vstat{font-family:"JetBrains Mono",monospace; font-size:10px; color:var(--muted); max-width:160px; min-height:13px; line-height:1.3}
+  .songsel{font-family:"Space Grotesk"; font-size:13px; color:var(--ink); background:var(--panel2);
+    border:1px solid var(--line); border-radius:9px; padding:8px 10px; cursor:pointer; min-width:172px}
+  .songsel:hover{border-color:var(--brass)}
+  .songnote{font-family:"JetBrains Mono",monospace; font-size:10px; color:var(--brass); max-width:200px; min-height:13px; line-height:1.3}
+  .tempo{display:flex; flex-direction:column; gap:7px; min-width:150px}
+  .tempo .row{display:flex; justify-content:space-between; align-items:baseline}
+  .tempo b{font-family:"JetBrains Mono",monospace; color:var(--brass); font-size:14px}
+  input[type=range]{-webkit-appearance:none; appearance:none; height:4px; border-radius:3px; background:var(--line); outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+    background:var(--brass); cursor:pointer; border:2px solid var(--bg)}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--brass);cursor:pointer;border:2px solid var(--bg)}
+  .switch{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); cursor:pointer; user-select:none}
+  .switch input{appearance:none; width:34px; height:19px; background:var(--panel2); border:1px solid var(--line);
+    border-radius:20px; position:relative; cursor:pointer; transition:.15s}
+  .switch input:checked{background:var(--bass)}
+  .switch input::after{content:""; position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%;
+    background:var(--ink); transition:.15s}
+  .switch input:checked::after{left:17px; background:#241a10}
+
+  .hud{display:flex; flex-wrap:wrap; gap:10px 24px; align-items:center; background:var(--panel2);
+    border:1px solid var(--line); border-radius:12px; padding:12px 18px; margin-bottom:14px}
+  .hud .chip{font-family:"JetBrains Mono",monospace; font-size:13px}
+  .hud .big{font-family:"Fraunces",serif; font-size:22px; font-weight:600}
+  .hud .inv{color:var(--brass); font-weight:700; font-family:"Space Grotesk"; font-size:15px}
+  .hud .travel{margin-left:auto; display:flex; gap:18px; align-items:center; font-family:"JetBrains Mono",monospace; font-size:12px; color:var(--muted)}
+  .hud .travel b{font-size:16px; color:var(--ink)}
+  .hud .travel .sm b{color:var(--step)} .hud .travel .bl b{color:var(--leap)}
+
+  .stage{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 14px; margin-bottom:14px}
+  .graphscroll{overflow-x:auto; padding-bottom:4px}
+  svg.graph{display:block}
+  .gdot-label{font-family:"JetBrains Mono",monospace; font-size:11px; fill:var(--ink)}
+  .gcol-chord{font-family:"Fraunces",serif; font-weight:600; font-size:16px; fill:var(--ink)}
+  .gcol-rn{font-family:"JetBrains Mono",monospace; font-size:11px; fill:var(--muted)}
+  .gcol-inv{font-family:"Space Grotesk"; font-size:11px; font-weight:600}
+
+  .sheetscroll{overflow-x:auto; padding-bottom:4px}
+  svg.sheet{display:block}
+  .sh-sym{font-family:"Fraunces",serif; font-weight:600; font-size:15px; fill:var(--ink)}
+  .sh-note{fill:var(--ink)}
+  .sh-acc{font-family:Georgia,serif; font-size:15px; fill:var(--ink)}
+  .sh-rest{font-family:serif; font-size:20px; fill:var(--muted)}
+  .sh-clef{fill:var(--ink)}
+  .sh-line{stroke:var(--muted); stroke-width:1; opacity:.75}
+  .sh-bar{stroke:var(--muted); stroke-width:1; opacity:.9}
+
+  .kbscroll{overflow-x:auto; margin-top:2px; padding-bottom:8px}
+  .keyboard{position:relative; display:flex; min-width:680px; height:148px; user-select:none}
+  .wkey{flex:1; background:linear-gradient(#fbf6ec,#e7dcc8); border:1px solid #b9ab93; border-radius:0 0 6px 6px;
+    position:relative; cursor:pointer; transition:.08s}
+  .wkey:active{background:linear-gradient(#efe6d4,#d8ccb4)}
+  .wkey .lab{position:absolute; bottom:6px; left:0; right:0; text-align:center; font-family:"JetBrains Mono",monospace;
+    font-size:9px; color:#9a8a6e; pointer-events:none}
+  .bkey{position:absolute; top:0; width:26px; height:90px; background:linear-gradient(#3a302a,#15110e); border:1px solid #000;
+    border-radius:0 0 5px 5px; z-index:3; cursor:pointer; transition:.08s}
+  .bkey:active{background:linear-gradient(#2a221c,#0c0907)}
+  .wkey.lit,.bkey.lit{box-shadow:inset 0 0 0 2px currentColor, 0 0 16px -4px currentColor}
+  .wkey.lit{background:color-mix(in srgb, currentColor 26%, #fbf6ec)}
+  .bkey.lit{background:color-mix(in srgb, currentColor 46%, #15110e)}
+  .wkey.held{outline:2px dashed var(--hold); outline-offset:-3px}
+  .bkey.held{outline:2px dashed var(--hold); outline-offset:-2px}
+  /* scale view */
+  .wkey.sc{background:color-mix(in srgb, var(--brass) 16%, #fbf6ec)}
+  .bkey.sc{background:color-mix(in srgb, var(--brass) 30%, #15110e)}
+  .wkey.avoid,.bkey.avoid{outline:2px dotted var(--leap); outline-offset:-3px}
+  .wkey.blue::after,.bkey.blue::after{content:""; position:absolute; left:50%; transform:translateX(-50%);
+    width:7px; height:7px; border-radius:50%; background:var(--v3); pointer-events:none}
+  .wkey.blue::after{bottom:22px} .bkey.blue::after{bottom:6px}
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; margin-top:12px; align-items:center}
+  .lg{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); font-family:"JetBrains Mono",monospace}
+  .lg .sw{width:11px; height:11px; border-radius:3px}
+  .lg .ln{width:18px; height:0; border-top:3px solid}
+
+  .insight{background:linear-gradient(135deg,var(--panel2),var(--panel)); border:1px solid var(--line);
+    border-left:3px solid var(--brass); border-radius:12px; padding:16px 18px}
+  .insight .now{font-family:"JetBrains Mono",monospace; font-size:12px; color:var(--brass); margin-bottom:8px; letter-spacing:.04em}
+  .insight h3{font-family:"Fraunces",serif; font-weight:600; font-size:17px; margin:0 0 6px}
+  .insight p{margin:0; color:#d8ccbb; font-size:14px; line-height:1.55}
+  .footnote{color:var(--muted); font-size:12px; margin-top:16px; line-height:1.55; font-family:"JetBrains Mono",monospace}
+  .footnote b{color:var(--ink)}
+
+  .cof{position:fixed; top:14px; right:14px; width:172px; background:rgba(38,31,26,.92);
+    border:1px solid var(--line); border-radius:14px; padding:9px 10px 7px; z-index:50;
+    box-shadow:0 12px 34px -14px #000; backdrop-filter:blur(5px)}
+  .cof .eyebrow{margin:0 0 3px; font-size:9px}
+  .cof svg{display:block; width:100%; height:auto}
+  @media (max-width:980px){ .cof{display:none} }
+
+  @media (max-width:560px){ body{padding:18px 12px 36px} .controls{gap:14px} .hud .travel{margin-left:0} }
+  @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+
+  /* ---- single-screen compact layout: sheet → graph → keyboard, minimal chrome ---- */
+  html{-webkit-text-size-adjust:100%}
+  body{padding:calc(12px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left))}
+  header .sub{display:none}
+  h1{font-size:clamp(20px,3vw,27px); margin-bottom:2px}
+  .eyebrow{margin:0 0 3px; font-size:10px}
+  .controls{gap:8px 14px; padding:8px 12px; margin:8px 0 6px}
+  .group{gap:4px}
+  .group > label{font-size:9px}
+  .seg button{padding:5px 9px; font-size:12px}
+  .tbtn{padding:6px 10px; font-size:13px; min-width:36px}
+  .songsel{padding:5px 8px; font-size:12px}
+  .switch{font-size:12px; gap:6px}
+  .tempo{min-width:120px}
+  .vstat{max-width:120px}
+  .hud{padding:7px 14px; margin-bottom:6px}
+  .hud .big{font-size:19px}
+  .stage{padding:8px 12px; margin-bottom:6px}
+  .legend{margin-top:5px; gap:6px 12px}
+  .lg{font-size:10px}
+  .lg .sw{width:9px; height:9px}
+  .keyboard{height:104px; min-width:640px}
+  .bkey{width:23px; height:62px}
+  .wkey .lab{font-size:8px; bottom:3px}
+  .insight{padding:9px 14px}
+  .insight h3{font-size:15px; margin-bottom:4px}
+  .insight p{font-size:13px; line-height:1.45}
+  .insight .now{font-size:11px; margin-bottom:5px}
+  .footnote{font-size:11px; margin-top:6px!important; line-height:1.4}
+  .kbscroll{padding-bottom:4px}
+  @media (pointer:coarse){ .keyboard{height:150px} .bkey{width:30px; height:92px} }
+  /* touch devices (iPad): bigger targets, no tap-highlight flash, no double-tap zoom on controls */
+  button,select,input,.wkey,.bkey{touch-action:manipulation; -webkit-tap-highlight-color:transparent}
+  @media (pointer:coarse){
+    .seg button{font-size:14px; padding:11px 14px}
+    .tbtn{font-size:16px; padding:13px 16px; min-width:52px}
+    .songsel{font-size:15px; padding:12px 12px}
+    .switch{font-size:15px}
+    .switch input{width:44px; height:24px}
+    .switch input::after{width:18px; height:18px}
+    .switch input:checked::after{left:21px}
+    input[type=range]::-webkit-slider-thumb{width:24px; height:24px}
+    input[type=range]::-moz-range-thumb{width:24px; height:24px}
+    .keyboard{height:180px}
+    .bkey{width:32px; height:110px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Voicing Lab</p>
+    <h1>Walking the chords with inversions</h1>
+    <p class="sub">A jazz pianist rarely plays chords in root position. They pick the <b style="color:var(--ink)">inversion</b> of each chord that keeps common tones held and moves the other voices the shortest distance — so the hand stays put. Compare <b style="color:var(--ink)">block</b> (everything in root position) with <b style="color:var(--ink)">smooth</b> voice leading and watch the lines go flat.</p>
+  </header>
+
+  <div class="controls">
+    <div class="group">
+      <label>Progression</label>
+      <div class="seg" id="progSeg">
+        <button data-prog="0" aria-pressed="true">ii–V–I</button>
+        <button data-prog="1">I–vi–ii–V</button>
+        <button data-prog="2">12-bar blues</button>
+        <button data-prog="3">Christmas Song (A)</button>
+      </div>
+    </div>
+    <div class="group">
+      <label>Real Book</label>
+      <select id="songSel" class="songsel">
+        <option value="">Load a song…</option>
+      </select>
+      <span id="songNote" class="songnote"></span>
+    </div>
+    <div class="group">
+      <label>Voicing</label>
+      <div class="seg mode" id="modeSeg">
+        <button data-mode="smooth" aria-pressed="true">Smooth (inversions)</button>
+        <button data-mode="block">Block (root pos.)</button>
+      </div>
+    </div>
+    <div class="group" id="invGroup" title="Anchor the first chord on this inversion — the whole voice-leading path re-solves from it">
+      <label>Start on</label>
+      <div class="seg" id="invSeg">
+        <button data-inv="0" aria-pressed="true">Root</button>
+        <button data-inv="1">1st</button>
+        <button data-inv="2">2nd</button>
+        <button data-inv="3">3rd</button>
+      </div>
+    </div>
+    <div class="group">
+      <label>Key</label>
+      <select id="keySel" class="songsel" style="min-width:96px"></select>
+    </div>
+    <div class="group">
+      <label>Transport</label>
+      <div class="transport">
+        <button class="tbtn" id="prev" title="Previous chord">‹</button>
+        <button class="tbtn play" id="play">► Play</button>
+        <button class="tbtn" id="next" title="Next chord">›</button>
+      </div>
+    </div>
+    <div class="group tempo">
+      <div class="row"><label style="margin:0">Tempo</label><b id="bpmVal">90 BPM</b></div>
+      <input type="range" id="bpm" min="50" max="180" value="90">
+    </div>
+    <div class="group">
+      <label>Voice</label>
+      <button class="tbtn" id="voiceBtn" title="Say: next, back, play, stop, reset">🎙 Voice off</button>
+      <span id="voiceStatus" class="vstat"></span>
+    </div>
+  </div>
+
+  <div class="hud">
+    <span class="chip"><span class="big" id="hChord">Dm7</span> <span class="gcol-rn" id="hRn">ii</span></span>
+    <span class="chip inv" id="hInv">Root position</span>
+    <div class="travel">
+      <span class="sm">smooth&nbsp;<b id="tSmooth">–</b></span>
+      <span class="bl">block&nbsp;<b id="tBlock">–</b></span>
+      <span>semitones of hand travel</span>
+    </div>
+  </div>
+
+  <div class="stage" id="sheetStage">
+    <div class="sheetscroll"><div id="sheetHost"></div></div>
+  </div>
+
+  <div class="stage">
+    <div class="graphscroll"><div id="graphHost"></div></div>
+    <div class="legend">
+      <div class="lg"><span class="sw" style="background:var(--v0)"></span>Root</div>
+      <div class="lg"><span class="sw" style="background:var(--v1)"></span>3rd</div>
+      <div class="lg"><span class="sw" style="background:var(--v2)"></span>5th</div>
+      <div class="lg"><span class="sw" style="background:var(--v3)"></span>7th</div>
+      <span style="width:1px;height:14px;background:var(--line)"></span>
+      <div class="lg"><span class="ln" style="border-color:var(--hold)"></span>held (common tone)</div>
+      <div class="lg"><span class="ln" style="border-color:var(--step)"></span>step</div>
+      <div class="lg"><span class="ln" style="border-color:var(--leap);border-top-style:dashed"></span>leap</div>
+    </div>
+  </div>
+
+  <div class="stage" id="kbStage">
+    <div class="kbscroll"><div class="keyboard" id="keyboard"></div></div>
+    <p class="footnote" id="kbNote" style="margin-top:10px">Your <b>left hand</b> for the current chord — the quick reference for the walking pattern. Dashed gold = a finger that <b>doesn't move</b> into this chord (common tone held).</p>
+  </div>
+
+  <div class="insight">
+    <div class="now" id="nowLine">Dm7 · ii</div>
+    <h3 id="insightTitle">Voice leading</h3>
+    <p id="insightBody"></p>
+  </div>
+
+  <p class="footnote">
+    <b>Read the graph:</b> height = pitch, each column = one chord. In <b>Smooth</b> mode the connecting lines run nearly flat — that's your hand staying in one position while a note or two shifts by a half or whole step. Flip to <b>Block</b> and the same progression turns into staircases of leaps. The inversion label under each chord (Root / 1st / 2nd / 3rd) tells you which chord tone landed in the bass.
+  </p>
+</div>
+
+<div class="cof" id="cof">
+  <p class="eyebrow">Circle of 5ths</p>
+  <div id="cofHost"></div>
+</div>
+
+<script>
+/* ---------------- music engine ---------------- */
+const LETTERS=["C","D","E","F","G","A","B"];
+const NAT={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+function spell(l,pc){let d=((pc-NAT[l])%12+12)%12;if(d>6)d-=12;return l+(d>0?"#".repeat(d):d<0?"b".repeat(-d):"");}
+function noteMidi(n,o){let s=NAT[n[0]];for(const c of n.slice(1))s+=(c==="#"?1:-1);return (o+1)*12+s;}
+function midiToName(m){const s=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];return s[((m%12)+12)%12]+(Math.floor(m/12)-1);}
+const QUAL={maj7:[0,4,7,11],m7:[0,3,7,10],dom7:[0,4,7,10],m7b5:[0,3,6,10],"6":[0,4,7,9],m6:[0,3,7,9],aug7:[0,4,8,10]};
+const QLAB={maj7:"maj7",m7:"m7",dom7:"7",m7b5:"m7♭5","6":"6",m6:"m6",aug7:"7♯5"};
+// letter steps from the root letter for each chord tone (6th chords use the 6th, not the 7th)
+const QLET={maj7:[0,2,4,6],m7:[0,2,4,6],dom7:[0,2,4,6],m7b5:[0,2,4,6],"6":[0,2,4,5],m6:[0,2,4,5],aug7:[0,2,4,6]};
+const ROLE_NAME=["root","3rd","5th","7th"];
+const roleNames=q=>(q==="6"||q==="m6")?["root","3rd","5th","6th"]:ROLE_NAME;
+const INV=["Root position","1st inversion","2nd inversion","3rd inversion"];
+const INV_SHORT=["Root","1st","2nd","3rd"];
+
+function parseRoot(root){ // handles "C", "Bb", "F#" etc.
+  const letter=root[0]; let pc=NAT[letter];
+  for(const c of root.slice(1)) pc+=(c==="#"?1:-1);
+  return {ri:LETTERS.indexOf(letter), pc:((pc%12)+12)%12};
+}
+function chordRoot(root,q,oct){
+  const iv=QUAL[q], lets=QLET[q], {ri,pc:rp}=parseRoot(root);
+  const tones=iv.map((semi,k)=>{const letter=LETTERS[(ri+lets[k])%7]; const pc=(rp+semi)%12; return {role:k,pc,name:spell(letter,pc)};});
+  let prev=-1e9;
+  return tones.map(t=>{let m=noteMidi(t.name,oct); while(m<=prev)m+=12; prev=m; return {...t, midi:m};});
+}
+function nearestMidiForPc(pc,ref){let base=pc+12*Math.round((ref-pc)/12);let best=base,bd=Math.abs(base-ref);
+  for(const c of[base-12,base+12]){if(Math.abs(c-ref)<bd){bd=Math.abs(c-ref);best=c;}} return best;}
+function perms(a){if(a.length<=1)return[a];let r=[];a.forEach((x,i)=>{perms(a.slice(0,i).concat(a.slice(i+1))).forEach(p=>r.push([x,...p]));});return r;}
+const P4=perms([0,1,2,3]);
+function voiceLead(prev,tones){
+  let best=null,bc=1e9;
+  for(const pm of P4){let cand=[],cost=0;
+    for(let s=0;s<4;s++){const t=tones[pm[s]]; const m=nearestMidiForPc(t.pc,prev[s].midi); cand.push({...t,midi:m}); cost+=Math.abs(m-prev[s].midi);}
+    if(cost<bc){bc=cost;best=cand;}}
+  return best;
+}
+function invIndex(voicing){let lo=voicing.reduce((a,b)=>b.midi<a.midi?b:a); return lo.role;}
+function walkingBass(rootName,nextRoot,beats=4){
+  // walk toward the next root: chord tones then a chromatic approach on the last beat.
+  // beats: 4 → R,3,5,approach · 3 → R,3,approach · 2 → R,approach · 1 → R
+  const tones=chordRoot(rootName,"dom7",2); // generic spacing for 1-3-5
+  const out=[]; let prev=-1e9;
+  const body=Math.max(1,beats-1), picks=[0,1,2].slice(0,body);
+  picks.forEach(k=>{let m=tones[k].midi; while(m<=prev)m+=12; prev=m; out.push(m);});
+  if(beats>1){
+    const appPc=(parseRoot(nextRoot).pc+1)%12; let a=Math.floor(prev/12)*12+appPc;
+    if(Math.abs(a-prev)>Math.abs(a-12-prev)) a-=12; if(a<=tones[0].midi-2) a+=12; out.push(a);
+  }
+  while(out.length<beats) out.push(out[out.length-1]);
+  return out;
+}
+
+/* ---------------- key transposition ---------------- */
+// off = semitones up from written key; lo = letter steps up (keeps spelling functional:
+// the ii of Eb comes out as F, not E#). Fallback respells anything gnarly (##/bb).
+const KEYS=[
+  {name:"C",off:0,lo:0},{name:"D♭",off:1,lo:1},{name:"D",off:2,lo:1},{name:"E♭",off:3,lo:2},
+  {name:"E",off:4,lo:2},{name:"F",off:5,lo:3},{name:"F♯",off:6,lo:3},{name:"G",off:7,lo:4},
+  {name:"A♭",off:8,lo:5},{name:"A",off:9,lo:5},{name:"B♭",off:10,lo:6},{name:"B",off:11,lo:6}
+];
+const SIMPLE_NAMES=["C","Db","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
+function transposeRoot(root,K){
+  const {pc}=parseRoot(root); const ri=LETTERS.indexOf(root[0]);
+  const L=LETTERS[(ri+K.lo)%7], npc=((pc+K.off)%12+12)%12;
+  const name=spell(L,npc);
+  // respell anything a player wouldn't want to read as a chord root (##/bb, B#, E#, Cb, Fb)
+  return (name.length>2 || ["B#","E#","Cb","Fb"].includes(name)) ? SIMPLE_NAMES[npc] : name;
+}
+
+/* ---------------- progressions ---------------- */
+const SPECS=[
+  [{r:"D",q:"m7",rn:"ii"},{r:"G",q:"dom7",rn:"V"},{r:"C",q:"maj7",rn:"I"}],
+  [{r:"C",q:"maj7",rn:"I"},{r:"A",q:"m7",rn:"vi"},{r:"D",q:"m7",rn:"ii"},{r:"G",q:"dom7",rn:"V"}],
+  [{r:"C",q:"dom7",rn:"I7"},{r:"F",q:"dom7",rn:"IV7"},{r:"C",q:"dom7",rn:"I7"},{r:"C",q:"dom7",rn:"I7"},
+   {r:"F",q:"dom7",rn:"IV7"},{r:"F",q:"dom7",rn:"IV7"},{r:"C",q:"dom7",rn:"I7"},{r:"A",q:"dom7",rn:"VI7"},
+   {r:"D",q:"m7",rn:"ii"},{r:"G",q:"dom7",rn:"V7"},{r:"C",q:"dom7",rn:"I7"},{r:"G",q:"dom7",rn:"V7"}],
+  // "The Christmas Song" (Tormé/Wells) A section, in C — chord changes only (a reduction
+  // to the four supported seventh-chord qualities; the melody/lyrics are not reproduced).
+  [{r:"C",q:"maj7",rn:"I"},{r:"B",q:"m7b5",rn:"iiø/vi"},{r:"E",q:"dom7",rn:"V/vi"},{r:"A",q:"m7",rn:"vi"},
+   {r:"G",q:"m7",rn:"ii/IV"},{r:"C",q:"dom7",rn:"V/IV"},{r:"F",q:"maj7",rn:"IV"},{r:"F",q:"m7",rn:"iv"},
+   {r:"Bb",q:"dom7",rn:"♭VII7"},{r:"E",q:"m7",rn:"iii"},{r:"A",q:"dom7",rn:"V/ii"},{r:"D",q:"m7",rn:"ii"},
+   {r:"G",q:"dom7",rn:"V"}]
+];
+
+function invert(voicing,k){ // raise the bottom k chord tones an octave → k-th inversion of a root-position voicing
+  return voicing.map(n=>({...n, midi:n.role<k?n.midi+12:n.midi}));
+}
+function computeProgression(specs,mode,startInv=0){
+  const roots=specs.map((s,i)=>chordRoot(s.r,s.q,3));
+  let voicings;
+  if(mode==="block"){
+    voicings=roots.map(v=>v.map(n=>({...n})));
+  }else{
+    voicings=[invert(roots[0],startInv)];
+    for(let i=1;i<specs.length;i++) voicings.push(voiceLead(voicings[i-1], roots[i].map(n=>({...n}))));
+  }
+  let startBeat=0;
+  const chords=specs.map((s,i)=>{
+    const beats=s.beats||4, start=startBeat; startBeat+=beats;
+    return {
+      label:s.r.replace("b","♭").replace("#","♯")+QLAB[s.q], roman:s.rn, root:s.r, q:s.q,
+      beats, start, bar:Math.floor(start/4), beat:start%4,
+      voicing:voicings[i], inv:invIndex(voicings[i]),
+      bass:walkingBass(s.r, specs[(i+1)%specs.length].r, beats)
+    };
+  });
+  return chords;
+}
+function travelOf(specs,mode,startInv=0){
+  const c=computeProgression(specs,mode,startInv); let t=0;
+  for(let i=0;i<c.length-1;i++) for(let s=0;s<4;s++) t+=Math.abs(c[i].voicing[s].midi-c[i+1].voicing[s].midi);
+  return t;
+}
+
+/* ---------------- state ---------------- */
+let progIdx=0, mode="smooth", curBar=0, playing=false;
+let startInv=0, keyIdx=0, melodyOn=false, bluesOverlay=false;
+const showBass=false, guideTones=false; // walking-bass & guide-tone layers retired from the UI (v4.4)
+const THEORY={};   // per-progression theory panel, keyed by SPECS index (set when a song loads)
+const SONGKEY={};  // written key per SPECS index (for key signatures / scale view); default C
+const MELODIES={}; // per SPECS index: [bar][{b,d,m}] in the written key
+let CH, CURSPECS, TRAVEL={smooth:0,block:0}; // travel totals cached per progression (recomputing them per bar was the hot path)
+let MELODY=null, EFFKEY="C"; // current melody (transposed) + effective key name
+let TOTBEATS=0, BEATMAP=[]; // absolute beat → chord-event index (chords can change mid-measure)
+function currentSpecs(){
+  const base=SPECS[progIdx], K=KEYS[keyIdx];
+  return K.off===0 ? base : base.map(s=>({...s, r:transposeRoot(s.r,K)}));
+}
+function rebuild(){
+  CURSPECS=currentSpecs();
+  CH=computeProgression(CURSPECS,mode,startInv);
+  TRAVEL.smooth=travelOf(CURSPECS,"smooth",startInv);
+  TRAVEL.block=travelOf(CURSPECS,"block");
+  TOTBEATS=CH.reduce((t,c)=>t+c.beats,0);
+  BEATMAP=new Array(TOTBEATS); CH.forEach((c,i)=>{ for(let b=c.start;b<c.start+c.beats;b++) BEATMAP[b]=i; });
+  const K=KEYS[keyIdx], shift=K.off<=6?K.off:K.off-12;
+  EFFKEY=transposeRoot(SONGKEY[progIdx]||"C",K);
+  const mel=MELODIES[progIdx];
+  MELODY=mel?mel.map(bar=>bar.map(ev=>({...ev,m:ev.m+shift}))):null;
+  melodyOn=!!MELODY; // melody always plays when the tune has one
+  buildGraph(); // full redraws only when the progression/mode/key/anchor actually changes
+  buildSheet();
+}
+
+/* ---------------- voice-leading graph ---------------- */
+const graphHost=document.getElementById("graphHost");
+const G={colW:0,padL:0}; // geometry of the last-built graph, for cheap band moves
+function updateActiveBand(){ // move the highlight without rebuilding the whole SVG
+  const band=graphHost.querySelector("#gActive");
+  if(!band){ buildGraph(); return; }
+  band.setAttribute("x", G.padL+curBar*G.colW);
+}
+function buildGraph(){
+  const n=CH.length;
+  const shown=v=>!guideTones||v.role===1||v.role===3; // guide-tone view: only 3rds & 7ths
+  const colW=Math.max(100, Math.min(140, 760/n))|0;
+  const padL=18, padR=18, padT=20, plotH=150, labelH=56;
+  G.colW=colW; G.padL=padL;
+  const W=padL+padR+n*colW, H=padT+plotH+labelH;
+  // pitch range
+  let allM=[]; CH.forEach(c=>c.voicing.forEach(v=>{if(shown(v))allM.push(v.midi);}));
+  if(showBass) CH.forEach(c=>c.bass.forEach(b=>allM.push(b)));
+  let lo=Math.min(...allM), hi=Math.max(...allM);
+  if(hi-lo<16){const mid=(hi+lo)/2; lo=mid-9; hi=mid+9;}
+  lo-=2; hi+=2;
+  const y=m=>padT+(hi-m)/(hi-lo)*plotH;
+  const cx=i=>padL+i*colW+colW/2;
+  const ROLECOL=["var(--v0)","var(--v1)","var(--v2)","var(--v3)"];
+
+  let s=`<svg class="graph" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">`;
+  // active column band
+  s+=`<rect id="gActive" x="${padL+curBar*colW}" y="${padT-6}" width="${colW}" height="${plotH+labelH-30}" rx="9" fill="var(--brass)" opacity="0.10"/>`;
+  // faint staff gridlines at octave C's
+  for(let m=Math.ceil(lo/12)*12; m<=hi; m+=12){ if(((m%12)+12)%12===0){ s+=`<line x1="${padL}" y1="${y(m)}" x2="${W-padR}" y2="${y(m)}" stroke="var(--line)" stroke-width="1" opacity="0.5"/>`;
+    s+=`<text x="${padL-2}" y="${y(m)-2}" class="gcol-rn" opacity="0.6">${midiToName(m)}</text>`; } }
+
+  // connecting lines (voice slots), drawn under dots
+  const motionStyle=d=>d===0?{col:"var(--hold)",wdt:3.4,dash:""}
+    :d<=2?{col:"var(--step)",wdt:2.4,dash:""}
+    :{col:"var(--leap)",wdt:2.2,dash:'stroke-dasharray="5 4"'};
+  for(let i=0;i<n-1;i++){
+    for(let sl=0;sl<4;sl++){
+      const a=CH[i].voicing[sl], b=CH[i+1].voicing[sl];
+      if(!shown(a)||!shown(b)) continue;
+      const {col,wdt,dash}=motionStyle(Math.abs(a.midi-b.midi));
+      s+=`<line x1="${cx(i)}" y1="${y(a.midi)}" x2="${cx(i+1)}" y2="${y(b.midi)}" stroke="${col}" stroke-width="${wdt}" ${dash} opacity="0.9" stroke-linecap="round"/>`;
+    }
+  }
+  // loop wrap (last chord back to the first) — faint stubs so the cycle reads without a line sweeping the graph
+  if(n>1) for(let sl=0;sl<4;sl++){
+    const a=CH[n-1].voicing[sl], b=CH[0].voicing[sl];
+    if(!shown(a)||!shown(b)) continue;
+    const {col,wdt,dash}=motionStyle(Math.abs(a.midi-b.midi));
+    const yA=y(a.midi), yB=y(b.midi), lean=(yB-yA)*0.4;
+    s+=`<line x1="${cx(n-1)}" y1="${yA}" x2="${cx(n-1)+colW*0.42}" y2="${yA+lean}" stroke="${col}" stroke-width="${wdt}" ${dash} opacity="0.3" stroke-linecap="round"/>`;
+    s+=`<line x1="${cx(0)-colW*0.42}" y1="${yB-lean}" x2="${cx(0)}" y2="${yB}" stroke="${col}" stroke-width="${wdt}" ${dash} opacity="0.3" stroke-linecap="round"/>`;
+  }
+  // optional bass line
+  if(showBass){
+    let pts=[];
+    for(let i=0;i<n;i++){ const bx=cx(i); pts.push([bx, y(CH[i].bass[0])]); }
+    let path=pts.map((p,i)=>(i?"L":"M")+p[0]+" "+p[1]).join(" ");
+    s+=`<path d="${path}" fill="none" stroke="var(--bass)" stroke-width="2" opacity="0.5" stroke-dasharray="2 5"/>`;
+    for(let i=0;i<n;i++){ const b=CH[i].bass[0]; s+=`<circle cx="${cx(i)}" cy="${y(b)}" r="4.5" fill="var(--bass)" opacity="0.65"/>`; }
+  }
+  // dots + note labels
+  for(let i=0;i<n;i++){
+    CH[i].voicing.forEach(v=>{
+      if(!shown(v)) return;
+      s+=`<circle cx="${cx(i)}" cy="${y(v.midi)}" r="7" fill="${ROLECOL[v.role]}" stroke="var(--bg)" stroke-width="1.5"/>`;
+      s+=`<text x="${cx(i)+11}" y="${y(v.midi)+4}" class="gdot-label">${v.name}</text>`;
+    });
+    // column labels
+    const baseY=padT+plotH+18;
+    s+=`<text x="${cx(i)}" y="${baseY}" class="gcol-chord" text-anchor="middle">${CH[i].label}</text>`;
+    s+=`<text x="${cx(i)}" y="${baseY+16}" class="gcol-rn" text-anchor="middle">${CH[i].roman}${CH[i].beats<4?" · "+CH[i].beats+"♩":""}</text>`;
+    s+=`<text x="${cx(i)}" y="${baseY+32}" class="gcol-inv" text-anchor="middle" fill="${CH[i].inv===0?'var(--muted)':'var(--brass)'}">${INV_SHORT[CH[i].inv]} inv${CH[i].inv===0?'’d':''}</text>`;
+    // clickable hit area
+    s+=`<rect x="${padL+i*colW}" y="${padT-6}" width="${colW}" height="${H-padT}" fill="transparent" style="cursor:pointer" data-bar="${i}"/>`;
+  }
+  s+=`</svg>`;
+  graphHost.innerHTML=s;
+  graphHost.querySelectorAll("rect[data-bar]").forEach(r=>{
+    r.addEventListener("click",()=>{ selectBar(+r.dataset.bar); playChord(curBar,showBass); playBarMelody(curBar); });
+  });
+}
+
+/* ---------------- keyboard ---------------- */
+const kb=document.getElementById("keyboard");
+const LOW=noteMidi("C",2), HIGH=noteMidi("C",5);
+const keyByMidi={};
+function renderKeyboard(){
+  kb.innerHTML="";
+  for(let m=LOW;m<=HIGH;m++){ const pc=((m%12)+12)%12; if(![1,3,6,8,10].includes(pc)){
+    const k=document.createElement("div"); k.className="wkey"; k.dataset.midi=m;
+    k.innerHTML=`<span class="lab">${midiToName(m)}</span>`;
+    k.addEventListener("pointerdown",()=>tapNote(m)); kb.appendChild(k); keyByMidi[m]=k; } }
+  requestAnimationFrame(()=>{
+    const wkeys=[...kb.querySelectorAll(".wkey")]; const kbRect=kb.getBoundingClientRect();
+    for(let m=LOW;m<=HIGH;m++){ const pc=((m%12)+12)%12;
+      if([1,3,6,8,10].includes(pc)){ const lw=wkeys.find(w=>+w.dataset.midi===m-1); if(!lw)continue;
+        const r=lw.getBoundingClientRect(); const bk=document.createElement("div"); bk.className="bkey"; bk.dataset.midi=m;
+        bk.addEventListener("pointerdown",e=>{e.stopPropagation();tapNote(m);}); kb.appendChild(bk); keyByMidi[m]=bk;
+        bk.style.left=(r.right-kbRect.left-bk.offsetWidth/2)+"px"; } }
+    lightChord(curBar);
+  });
+}
+function clearKeys(){ Object.values(keyByMidi).forEach(k=>{k.classList.remove("lit","held");k.style.color="";}); }
+function lightKey(midi,color){ const k=keyByMidi[midi]; if(k){k.style.color=color;k.classList.add("lit");} }
+const CSSVAR_CACHE={};
+function cssVar(n){ return CSSVAR_CACHE[n] ?? (CSSVAR_CACHE[n]=getComputedStyle(document.documentElement).getPropertyValue(n).trim()); }
+const ROLEVAR=i=>cssVar(`--v${i}`);
+function lightChord(bi){
+  clearKeys();
+  const c=CH[bi];
+  const prev=bi>0?CH[bi-1].voicing.map(v=>v.midi):[];
+  c.voicing.forEach(v=>{ if(guideTones&&v.role!==1&&v.role!==3) return;
+    lightKey(v.midi, ROLEVAR(v.role));
+    if(prev.includes(v.midi)){ const k=keyByMidi[v.midi]; if(k)k.classList.add("held"); } });
+  if(showBass){ const b=keyByMidi[c.bass[0]]; if(b){b.style.color=cssVar("--bass");b.classList.add("lit");} }
+}
+
+/* ---------------- sheet music (hand-drawn grand staff) ---------------- */
+const sheetHost=document.getElementById("sheetHost");
+const KEYSIG={"C":0,"G":1,"D":2,"A":3,"E":4,"B":5,"F#":6,"C#":7,"F":-1,"Bb":-2,"Eb":-3,"Ab":-4,"Db":-5,"Gb":-6,"Cb":-7};
+const SHARP_ORDER=["F","C","G","D","A","E","B"], FLAT_ORDER=["B","E","A","D","G","C","F"];
+function keyAlteration(letter,keyName){ // what the key signature does to this letter: -1/0/+1
+  const n=KEYSIG[keyName]??0;
+  if(n>0) return SHARP_ORDER.slice(0,n).includes(letter)?1:0;
+  if(n<0) return FLAT_ORDER.slice(0,-n).includes(letter)?-1:0;
+  return 0;
+}
+function spellInKey(midi,keyName){ // letter/accidental/step for a midi note in this key
+  const pc=((midi%12)+12)%12, sig=KEYSIG[keyName]??0;
+  let letter=null, acc=0;
+  for(const L of LETTERS){ const a=keyAlteration(L,keyName);
+    if((((NAT[L]+a)%12)+12)%12===pc){ letter=L; acc=a; break; } }
+  if(letter===null){ // chromatic: sharp keys spell up, flat keys spell down
+    if(sig>=0){ for(const L of LETTERS) if((((NAT[L]+1)%12)+12)%12===pc){ letter=L; acc=1; break; } }
+    if(letter===null) for(const L of LETTERS) if((((NAT[L]-1)%12)+12)%12===pc){ letter=L; acc=-1; break; }
+  }
+  const oct=Math.round((midi-NAT[letter]-acc)/12)-1;
+  return {letter, acc, step:oct*7+LETTERS.indexOf(letter)};
+}
+const SH={S:8, colW:0, padL:86, T0:46};   // sheet geometry (staff gap, per-bar width, left pad, treble top)
+SH.B0=SH.T0+4*SH.S+6*SH.S;                 // bass-staff top line
+const shYT=st=>SH.T0+4*SH.S-(st-30)*(SH.S/2); // treble: bottom line = E4 (step 30)
+const shYB=st=>SH.B0+4*SH.S-(st-18)*(SH.S/2); // bass:   bottom line = G2 (step 18)
+function accGlyph(a){ return a===1?"♯":a===-1?"♭":"♮"; }
+function drawKeySigTo(sig,clef){ // returns {svg,width}
+  let s="", n=Math.abs(sig); if(!sig) return {svg:"",width:0};
+  const treb={sh:[38,35,39,36,33,37,34], fl:[34,37,33,36,32,35,31]};
+  const steps=(sig>0?treb.sh:treb.fl).slice(0,n);
+  steps.forEach((st,i)=>{ s+=`<text class="sh-acc" x="${34+i*9}" y="${(clef==="T"?shYT(st):shYB(st-12))+5}">${sig>0?"♯":"♭"}</text>`; });
+  return {svg:s, width:n*9};
+}
+function ledger(x,step,clef){ // ledger lines for notes outside the 5-line staff
+  let s=""; const y=clef==="T"?shYT:shYB, lo=clef==="T"?30:18, hi=lo+8;
+  if(step<lo) for(let st=lo-2; st>=step-(step%2?1:0); st-=2) s+=`<line class="sh-line" x1="${x-9}" y1="${y(st)}" x2="${x+9}" y2="${y(st)}"/>`;
+  if(step>hi) for(let st=hi+2; st<=step+(step%2?1:0); st+=2) s+=`<line class="sh-line" x1="${x-9}" y1="${y(st)}" x2="${x+9}" y2="${y(st)}"/>`;
+  return s;
+}
+function noteHead(x,y,type,color){ // type: w(hole)/h(alf)/q(uarter+)
+  const hollow=type==="w"||type==="h";
+  const rx=type==="w"?5.6:4.8;
+  return `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="3.5" transform="rotate(-18 ${x} ${y})" `+
+    (hollow?`fill="none" stroke="${color}" stroke-width="1.7"`:`fill="${color}"`)+`/>`;
+}
+function buildSheet(){
+  const S=SH.S;
+  const nBars=Math.max(1,Math.ceil(TOTBEATS/4));
+  const colW=Math.max(150,Math.min(230,1600/nBars))|0; SH.colW=colW;
+  const beatW=(colW-26)/4; SH.beatW=beatW;
+  const padL=SH.padL, W=padL+20+nBars*colW, T0=SH.T0, B0=SH.B0, H=B0+4*S+30;
+  const sig=KEYSIG[EFFKEY]??0;
+  const evX=c=>padL+c.bar*colW+16+c.beat*beatW; // absolute x of a chord event's beat position
+  let s=`<svg class="sheet" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">`;
+  // active band spans the CURRENT CHORD's actual beats (chords can change mid-measure)
+  { const c=CH[curBar];
+    s+=`<rect id="shActive" x="${evX(c)-8}" y="${T0-32}" width="${c.beats*beatW+6}" height="${B0+4*S-T0+66}" rx="9" fill="var(--brass)" opacity="0.10"/>`; }
+  // staves
+  for(let i=0;i<5;i++){ s+=`<line class="sh-line" x1="12" y1="${T0+i*S}" x2="${W-8}" y2="${T0+i*S}"/>`;
+    s+=`<line class="sh-line" x1="12" y1="${B0+i*S}" x2="${W-8}" y2="${B0+i*S}"/>`; }
+  s+=`<line class="sh-bar" x1="12" y1="${T0}" x2="12" y2="${B0+4*S}" stroke-width="2.4"/>`; // system brace line
+  // clefs, key sig, time sig
+  s+=`<text class="sh-clef" x="16" y="${T0+3*S+11}" font-size="46" font-family="serif">𝄞</text>`;
+  s+=`<text class="sh-clef" x="18" y="${B0+2*S+7}" font-size="34" font-family="serif">𝄢</text>`;
+  s+=drawKeySigTo(sig,"T").svg;
+  { let t=""; const nAcc=Math.abs(sig); for(let i=0;i<nAcc;i++){ const stps=(sig>0?[24,21,25,22,19,23,20]:[20,23,19,22,18,21,17]); t+=`<text class="sh-acc" x="${34+i*9}" y="${shYB(stps[i])+5}">${sig>0?"♯":"♭"}</text>`; } s+=t; }
+  s+=`<text class="sh-acc" x="${padL-16}" y="${T0+S+5}" font-size="15">4</text><text class="sh-acc" x="${padL-16}" y="${T0+3*S+5}" font-size="15">4</text>`;
+  s+=`<text class="sh-acc" x="${padL-16}" y="${B0+S+5}" font-size="15">4</text><text class="sh-acc" x="${padL-16}" y="${B0+3*S+5}" font-size="15">4</text>`;
+  const ROLECOL=["var(--v0)","var(--v1)","var(--v2)","var(--v3)"];
+  // ---- barlines + treble melody, one pass per MEASURE ----
+  for(let bi=0;bi<nBars;bi++){
+    const bx=padL+bi*colW;
+    s+=`<line class="sh-bar" x1="${bx}" y1="${T0}" x2="${bx}" y2="${T0+4*S}"/>`;
+    s+=`<line class="sh-bar" x1="${bx}" y1="${B0}" x2="${bx}" y2="${B0+4*S}"/>`;
+    if(MELODY&&MELODY[bi]){
+      const evs=MELODY[bi];
+      const evX=ev=>bx+16+ev.b*beatW+6;
+      // beams: pair consecutive eighths that share a beat
+      const beamed=new Set();
+      for(let k=0;k<evs.length-1;k++){ const a=evs[k], b2=evs[k+1];
+        if(a.d===0.5&&b2.d===0.5&&b2.b===a.b+0.5&&(a.b*2)%1===0){ beamed.add(k); k++; } }
+      evs.forEach((ev,k)=>{
+        const inf=spellInKey(ev.m,EFFKEY), x=evX(ev), y=shYT(inf.step);
+        const up=inf.step<34;
+        s+=ledger(x,inf.step,"T");
+        const disp=inf.acc!==keyAlteration(inf.letter,EFFKEY);
+        if(disp) s+=`<text class="sh-acc" x="${x-14}" y="${y+5}">${accGlyph(inf.acc)}</text>`;
+        const type=ev.d>=4?"w":ev.d>=2?"h":"q";
+        s+=noteHead(x,y,type,"var(--ink)");
+        if(type!=="w"){
+          const sx=up?x+4.4:x-4.4, sy2=up?y-26:y+26;
+          s+=`<line x1="${sx}" y1="${y+(up?-1:1)}" x2="${sx}" y2="${sy2}" stroke="var(--ink)" stroke-width="1.4"/>`;
+          if(ev.d===0.5){
+            const prevBeamed=beamed.has(k-1), isBeamStart=beamed.has(k);
+            if(isBeamStart){ const nx=evX(evs[k+1]), ninf=spellInKey(evs[k+1].m,EFFKEY), nup=ninf.step<34;
+              const nsx=nup?nx+4.4:nx-4.4, nsy=nup?shYT(ninf.step)-26:shYT(ninf.step)+26;
+              s+=`<line x1="${sx}" y1="${sy2}" x2="${nsx}" y2="${nsy}" stroke="var(--ink)" stroke-width="3.4"/>`; }
+            else if(!prevBeamed){ s+=`<path d="M ${sx} ${sy2} q 7 ${up?4:-4} 5 ${up?12:-12}" fill="none" stroke="var(--ink)" stroke-width="1.6"/>`; }
+          }
+        }
+        if(ev.d===1.5||ev.d===3){ s+=`<circle cx="${x+9}" cy="${y-(inf.step%2?0:3)}" r="1.8" fill="var(--ink)"/>`; }
+      });
+      // quarter rests on uncovered beats
+      for(let bt=0;bt<4;bt++){ if(!evs.some(ev=>ev.b<=bt&&ev.b+ev.d>bt))
+        s+=`<text class="sh-rest" x="${bx+16+bt*beatW+2}" y="${T0+2*S+7}">𝄽</text>`; }
+    }
+  }
+  // ---- chord events: symbol + bass-clef stack AT THEIR ACTUAL BEAT, one pass per CHORD ----
+  CH.forEach((c,ei)=>{
+    const ex=evX(c);
+    // chord symbol exactly where the change happens
+    s+=`<text class="sh-sym" x="${ex-8}" y="${T0-16}">${c.label}</text>`;
+    // stack: note value reflects the chord's duration (whole ≥4 beats, half ≥2, quarter =1)
+    const type=c.beats>=4?"w":c.beats>=2?"h":"q";
+    const infos=c.voicing.map(v=>({v, ...spellInKey(v.midi,EFFKEY)})).sort((a,b)=>a.step-b.step);
+    const cxc=ex+6; let prev=-99, off=0, accSlot=0;
+    infos.forEach(inf=>{
+      off=(inf.step-prev===1)?(off===0?9:0):0; prev=inf.step;
+      const y=shYB(inf.step), x=cxc+off;
+      s+=ledger(x,inf.step,"B");
+      const disp=inf.acc!==keyAlteration(inf.letter,EFFKEY);
+      if(disp){ s+=`<text class="sh-acc" x="${cxc-14-(accSlot%2)*10}" y="${y+5}">${accGlyph(inf.acc)}</text>`; accSlot++; }
+      s+=noteHead(x,y,type,ROLECOL[inf.v.role]);
+    });
+    if(type!=="w"){ // one shared stem for the stack, like real chord notation
+      const yTop=shYB(infos[infos.length-1].step), yBot=shYB(infos[0].step);
+      s+=`<line x1="${cxc-4.4}" y1="${yTop}" x2="${cxc-4.4}" y2="${yBot+26}" stroke="var(--muted)" stroke-width="1.4"/>`;
+    }
+    // walking bass: one quarter per beat of THIS chord, at absolute beat positions
+    if(showBass){
+      c.bass.forEach((bm,bt)=>{
+        const inf=spellInKey(bm,EFFKEY);
+        const x=padL+Math.floor((c.start+bt)/4)*colW+16+((c.start+bt)%4)*beatW+beatW*0.55, y=shYB(inf.step);
+        s+=ledger(x,inf.step,"B");
+        const disp=inf.acc!==keyAlteration(inf.letter,EFFKEY);
+        if(disp) s+=`<text class="sh-acc" x="${x-13}" y="${y+5}" opacity="0.8">${accGlyph(inf.acc)}</text>`;
+        s+=`<ellipse cx="${x}" cy="${y}" rx="4.2" ry="3.1" transform="rotate(-18 ${x} ${y})" fill="var(--bass)" opacity="0.85"/>`;
+        s+=`<line x1="${x+3.9}" y1="${y-1}" x2="${x+3.9}" y2="${y-24}" stroke="var(--bass)" stroke-width="1.3" opacity="0.85"/>`;
+      });
+    }
+    // click target covers exactly this chord's beats
+    s+=`<rect x="${ex-10}" y="${T0-32}" width="${c.beats*beatW+6}" height="${B0+4*S-T0+66}" fill="transparent" style="cursor:pointer" data-bar="${ei}"/>`;
+  });
+  s+=`<line class="sh-bar" x1="${W-8}" y1="${T0}" x2="${W-8}" y2="${B0+4*S}" stroke-width="2.4"/>`;
+  s+=`</svg>`;
+  sheetHost.innerHTML=s;
+  sheetHost.querySelectorAll("rect[data-bar]").forEach(r=>{
+    r.addEventListener("click",()=>{ selectBar(+r.dataset.bar); playChord(curBar,showBass); playBarMelody(curBar); });
+  });
+}
+function updateSheetBand(){
+  const band=sheetHost.querySelector("#shActive");
+  if(!band){ buildSheet(); return; }
+  const c=CH[curBar];
+  band.setAttribute("x", SH.padL+c.bar*SH.colW+16+c.beat*SH.beatW-8);
+  band.setAttribute("width", c.beats*SH.beatW+6);
+}
+
+/* ---------------- circle of fifths ---------------- */
+const cofHost=document.getElementById("cofHost");
+const COF_LABELS=["C","G","D","A","E","B","G♭","D♭","A♭","E♭","B♭","F"];
+const posByPc={}; for(let i=0;i<12;i++) posByPc[(i*7)%12]=i;
+function cofXY(i,R,cx,cy){const a=(i*30-90)*Math.PI/180; return [cx+R*Math.cos(a), cy+R*Math.sin(a)];}
+function lightCircle(){
+  if(!cofHost) return;
+  const S=152, cx=S/2, cy=S/2, R=60, nodeR=13;
+  const inProg=new Set(CURSPECS.map(s=>parseRoot(s.r).pc));
+  const curPc=parseRoot(CH[curBar].root).pc;
+  const prevPc=curBar>0?parseRoot(CH[curBar-1].root).pc:null;
+  let s=`<svg viewBox="0 0 ${S} ${S}" xmlns="http://www.w3.org/2000/svg">`;
+  s+=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--line)" stroke-width="1"/>`;
+  if(prevPc!==null && prevPc!==curPc){
+    const [x1,y1]=cofXY(posByPc[prevPc],R,cx,cy), [x2,y2]=cofXY(posByPc[curPc],R,cx,cy);
+    s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--brass)" stroke-width="1.6" opacity="0.55" stroke-linecap="round"/>`;
+  }
+  for(let i=0;i<12;i++){
+    const [x,y]=cofXY(i,R,cx,cy), pc=(i*7)%12;
+    const isCur=pc===curPc, isPrev=pc===prevPc, isIn=inProg.has(pc);
+    let fill="transparent", stroke="var(--line)", tcol="var(--muted)", r=nodeR, fw=400;
+    if(isIn){ stroke="var(--brass)"; tcol="var(--ink)"; }
+    if(isPrev){ fill="rgba(216,162,74,.20)"; }
+    if(isCur){ fill="var(--brass)"; stroke="var(--brass)"; tcol="#241a10"; r=nodeR+1; fw=700; }
+    s+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.3"/>`;
+    s+=`<text x="${x}" y="${y+3}" text-anchor="middle" fill="${tcol}" style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:${fw}">${COF_LABELS[i]}</text>`;
+  }
+  s+=`<text x="${cx}" y="${cy+4}" text-anchor="middle" fill="var(--ink)" style="font-family:'Fraunces',serif;font-weight:600;font-size:13px">${CH[curBar].label}</text>`;
+  s+=`</svg>`;
+  cofHost.innerHTML=s;
+}
+
+/* ---------------- improv scale view (dormant — keyboard is dedicated to the chord, v4.5) ---------------- */
+const SCALES={
+  maj7:{name:"major (Ionian)", iv:[0,2,4,5,7,9,11], avoid:[5]},
+  "6":{name:"major (Ionian)", iv:[0,2,4,5,7,9,11], avoid:[5]},
+  dom7:{name:"Mixolydian", iv:[0,2,4,5,7,9,10], avoid:[5]},
+  m7:{name:"Dorian", iv:[0,2,3,5,7,9,10], avoid:[]},
+  m6:{name:"Dorian", iv:[0,2,3,5,7,9,10], avoid:[]},
+  m7b5:{name:"Locrian", iv:[0,1,3,5,6,8,10], avoid:[1]},
+  aug7:{name:"whole-tone", iv:[0,2,4,6,8,10], avoid:[]}
+};
+function lightScale(){
+  clearKeys();
+  const c=CH[curBar], rootPc=parseRoot(c.root).pc, sc=SCALES[c.q]||SCALES.dom7;
+  const scaleSet=new Set(sc.iv.map(x=>(rootPc+x)%12));
+  const avoidSet=new Set(sc.avoid.map(x=>(rootPc+x)%12));
+  const chordPcs={}; c.voicing.forEach(v=>{chordPcs[v.pc]=v.role;});
+  const bluesRoot=parseRoot(EFFKEY).pc;
+  const bluesSet=new Set([0,3,5,6,7,10].map(x=>(bluesRoot+x)%12));
+  for(const mStr of Object.keys(keyByMidi)){
+    const m=+mStr, pc=((m%12)+12)%12, k=keyByMidi[m]; if(!k) continue;
+    if(chordPcs[pc]!==undefined){
+      k.style.color=ROLEVAR(chordPcs[pc]); k.classList.add("lit");
+      if(chordPcs[pc]===1||chordPcs[pc]===3) k.classList.add("held"); // guide tones
+    } else if(scaleSet.has(pc)) k.classList.add("sc");
+    if(avoidSet.has(pc)&&chordPcs[pc]===undefined) k.classList.add("avoid");
+    if(bluesOverlay&&bluesSet.has(pc)) k.classList.add("blue");
+  }
+  scaleHint();
+}
+function scaleHint(){
+  const c=CH[curBar], sc=SCALES[c.q]||SCALES.dom7, rn=roleNames(c.q);
+  const third=c.voicing.find(v=>v.role===1), sev=c.voicing.find(v=>v.role===3);
+  const next=CH[(curBar+1)%CH.length], nextThird=next.voicing.find(v=>v.role===1);
+  let t=`<b>${c.root.replace("b","♭").replace("#","♯")} ${sc.name}</b> over ${c.label}. Chord tones are lit in role colors; the <b style="color:var(--hold)">dashed-gold keys are the guide tones</b> (${third.name} = 3rd, ${sev.name} = ${rn[3]}) — build your lines around them.`;
+  if(sc.avoid.length) t+=` The dotted-orange key is the avoid note: fine passing through, don't sit on it.`;
+  if(next!==c) t+=` Next up <b>${next.label}</b> — aim your ${rn[3]} at <b>${nextThird.name}</b>, its 3rd.`;
+  if(bluesOverlay) t+=`<br><b style="color:var(--v3)">Blues overlay:</b> indigo-dotted keys = the ${EFFKEY.replace("b","♭").replace("#","♯")} blues scale. The ♭3 and ♭5 are the blue notes — approach them as bends and passing colors over any of these chords.`;
+  document.getElementById("kbNote").innerHTML=t;
+}
+
+/* ---------------- insight + hud ---------------- */
+function setHud(){
+  const c=CH[curBar];
+  document.getElementById("hChord").textContent=c.label;
+  document.getElementById("hRn").textContent=c.roman;
+  document.getElementById("hInv").textContent=INV[c.inv];
+  document.getElementById("tSmooth").textContent=TRAVEL.smooth;
+  document.getElementById("tBlock").textContent=TRAVEL.block;
+}
+function updateInsight(){
+  const c=CH[curBar];
+  document.getElementById("nowLine").textContent=`${c.label} · ${c.roman} — ${INV[c.inv]}`;
+  const title=document.getElementById("insightTitle"), body=document.getElementById("insightBody");
+  if(mode==="block"){
+    title.textContent="Block voicing — root position";
+    body.innerHTML=`<b>${c.label}</b> with its root (<b style="color:var(--v0)">${c.voicing[0].name}</b>) in the bass. Clear and easy to spell, but going chord to chord every voice has to leap to reset. That's why the graph looks like a staircase. Switch to <b>Smooth</b> to let inversions absorb the motion.`;
+    return;
+  }
+  // smooth
+  if(curBar===0){
+    if(THEORY[progIdx]){
+      title.textContent=THEORY[progIdx].title; body.innerHTML=THEORY[progIdx].body; return;
+    }
+    if(progIdx===3){
+      title.textContent="Starting position — why this whole thing pulls home";
+      body.innerHTML=`The anchor is <b>${c.label}</b> in root position, but the real story of this tune lives on the <b style="color:var(--brass)">circle of fifths</b> in the corner. Step through and watch the highlight: most of the time it hops <b>one slot counter‑clockwise</b>, and every one of those hops is a <b style="color:var(--brass)">descending fifth</b> — a root falling to the root a fifth below. Eight of the moves here are exactly that, usually arriving as a <b>ii–V</b> pair (Dm7→G7, Gm7→C7, Em7→A7, Bm7♭5→E7), each pair briefly making a new chord feel like "home" — vi, then IV, then ii — before the music finally settles back on C.<br><br>The math underneath is the perfect fifth's <b style="color:var(--brass)">3:2 frequency ratio</b>, the most consonant relationship after the octave, so two roots a fifth apart already sound deeply related. On top of that, every dominant chord hides a <b>tritone</b> (in G7, the notes B and F) that resolves by half‑steps into the next chord's 3rd and root. The falling‑fifth bass and that half‑step pull fire at the same instant, so each step is a tiny tension‑and‑release; chain them and the ear is handed home over and over. That same motion is why the voices barely move — the <span style="color:var(--hold)">7th of one chord slides down a half step to become the 3rd of the next</span> — which is exactly what the flat lines in the graph and the low hand‑travel number are showing you. The few non‑fifth moves (Cmaj7→Bm7♭5, Fmaj7→Fm7, the tritone out of B♭7) are the chromatic "spice" jazz players love this tune for.`;
+      return;
+    }
+    title.textContent="Starting position";
+    body.innerHTML=`The anchor chord — <b>${c.label}</b> in ${INV[c.inv].toLowerCase()}. Everything after this is chosen relative to it: step to the next chord and watch which notes <span style="color:var(--hold)">stay put</span>.`;
+    return;
+  }
+  let held=0, maxMove=0;
+  c.voicing.forEach((v,s)=>{ const d=Math.abs(v.midi-CH[curBar-1].voicing[s].midi); if(d===0)held++; maxMove=Math.max(maxMove,d); });
+  title.textContent=`${INV[c.inv]} — ${roleNames(c.q)[c.inv]} in the bass`;
+  const heldTxt = held===0 ? "No common tones this time, so every voice slides — but only by a step or two."
+    : `<b style="color:var(--hold)">${held} note${held>1?"s":""} held</b> from the previous chord (those fingers don't move).`;
+  body.innerHTML=`To get from ${CH[curBar-1].label} to <b>${c.label}</b> with the least motion, the chord lands in <b style="color:var(--brass)">${INV[c.inv].toLowerCase()}</b>. ${heldTxt} The biggest single move is ${maxMove} semitone${maxMove===1?"":"s"}. In root position this same step would jump much further.`;
+}
+
+/* ---------------- audio ---------------- */
+let chordSynth,bassSynth,piano=null,pianoReady=false,started=false,loopId=null,beatCounter=0;
+function initAudio(){
+  if(started)return;
+  chordSynth=new Tone.PolySynth(Tone.Synth,{oscillator:{type:"triangle"},envelope:{attack:.012,decay:.35,sustain:.32,release:1.5}}).toDestination();
+  chordSynth.volume.value=-11;
+  bassSynth=new Tone.Synth({oscillator:{type:"sine"},envelope:{attack:.02,decay:.18,sustain:.55,release:.4}}).toDestination();
+  bassSynth.volume.value=-7;
+  // Real piano (Salamander samples), lazy-loaded from CDN. The synths cover until it's
+  // ready; if the samples never load (offline), the synths simply keep playing.
+  try{
+    piano=new Tone.Sampler({
+      urls:{A1:"A1.mp3",C2:"C2.mp3","D#2":"Ds2.mp3","F#2":"Fs2.mp3",A2:"A2.mp3",
+        C3:"C3.mp3","D#3":"Ds3.mp3","F#3":"Fs3.mp3",A3:"A3.mp3",
+        C4:"C4.mp3","D#4":"Ds4.mp3","F#4":"Fs4.mp3",A4:"A4.mp3",
+        C5:"C5.mp3","D#5":"Ds5.mp3","F#5":"Fs5.mp3"},
+      baseUrl:"https://tonejs.github.io/audio/salamander/",
+      release:1.2,
+      onload:()=>{ pianoReady=true; }
+    }).toDestination();
+    piano.volume.value=-6;
+  }catch(_){ /* keep synth fallback */ }
+  Tone.Transport.bpm.value=+document.getElementById("bpm").value;
+  started=true;
+}
+const chordInstr=()=>pianoReady?piano:chordSynth;
+const bassInstr=()=>pianoReady?piano:bassSynth;
+function chordNotes(bi){
+  const vs=guideTones?CH[bi].voicing.filter(v=>v.role===1||v.role===3):CH[bi].voicing;
+  return vs.map(v=>Tone.Frequency(v.midi,"midi").toNote());
+}
+async function playChord(bi,withBass){
+  if(typeof Tone==="undefined") return;
+  await Tone.start(); initAudio();
+  chordInstr().triggerAttackRelease(chordNotes(bi),"2n");
+  if(withBass) bassInstr().triggerAttackRelease(Tone.Frequency(CH[bi].bass[0],"midi").toNote(),"4n");
+}
+async function playBarMelody(bi){ // hear the melody that falls within this chord's beats
+  if(!melodyOn||!MELODY||typeof Tone==="undefined") return;
+  const c=CH[bi], evs=(MELODY[c.bar]||[]).filter(x=>x.b>=c.beat&&x.b<c.beat+c.beats);
+  if(!evs.length) return;
+  await Tone.start(); initAudio();
+  const spb=60/(+document.getElementById("bpm").value), now=Tone.now();
+  evs.forEach(x=>{ chordInstr().triggerAttackRelease(
+    Tone.Frequency(x.m,"midi").toNote(), Math.max(0.12,x.d*spb*0.9), now+(x.b-c.beat)*spb); });
+}
+async function tapNote(midi){
+  if(typeof Tone==="undefined") return;
+  await Tone.start(); initAudio();
+  const synth = pianoReady?piano:(midi<noteMidi("C",3)?bassSynth:chordSynth);
+  synth.triggerAttackRelease(Tone.Frequency(midi,"midi").toNote(),"8n");
+  const k=keyByMidi[midi];
+  if(k){k.style.color="var(--brass)";k.classList.add("lit");setTimeout(()=>lightChord(curBar),170);}
+}
+async function startPlay(){
+  if(typeof Tone==="undefined"){ document.getElementById("play").innerHTML="⚠ no audio";
+    console.error("Tone.js failed to load — check the network connection, then reload."); return; }
+  await Tone.start(); initAudio();
+  playing=true; document.getElementById("play").innerHTML="❚❚ Stop";
+  beatCounter=CH[curBar].start;
+  loopId=Tone.Transport.scheduleRepeat((time)=>{
+    const b=beatCounter%TOTBEATS, ei=BEATMAP[b], ev=CH[ei];
+    const spb=Tone.Time("4n").toSeconds();
+    if(showBass){ const bn=ev.bass[b-ev.start]; bassInstr().triggerAttackRelease(Tone.Frequency(bn,"midi").toNote(),"4n",time); }
+    if(b===ev.start) // chords strike exactly where they fall in the measure, held for their real length
+      chordInstr().triggerAttackRelease(chordNotes(ei), Math.max(0.3, ev.beats*spb*(showBass?0.8:0.95)), time);
+    if(b%4===0&&melodyOn&&MELODY&&MELODY[b/4]){
+      MELODY[b/4].forEach(x=>{ chordInstr().triggerAttackRelease(
+        Tone.Frequency(x.m,"midi").toNote(), Math.max(0.12,x.d*spb*0.9), time+x.b*spb); }); }
+    Tone.Draw.schedule(()=>{ if(b===ev.start){ selectBar(ei,false); } if(showBass){ lightChord(ei); const bk=keyByMidi[ev.bass[b-ev.start]]; if(bk){bk.style.color=cssVar("--bass");bk.classList.add("lit");} } },time);
+    beatCounter++;
+  },"4n");
+  Tone.Transport.start();
+}
+function stopPlay(){
+  playing=false; document.getElementById("play").innerHTML="► Play";
+  if(loopId!==null){Tone.Transport.clear(loopId);loopId=null;} Tone.Transport.stop();
+  lightChord(curBar);
+}
+
+/* ---------------- selection ---------------- */
+function selectBar(bi,scroll=true){
+  curBar=((bi%CH.length)+CH.length)%CH.length;
+  updateActiveBand(); lightChord(curBar); setHud(); updateInsight(); lightCircle();
+  updateSheetBand();
+  if(scroll){ const host=document.querySelector(".graphscroll"); const svg=graphHost.querySelector("svg");
+    if(host&&svg&&host.scrollTo){ const colW=svg.viewBox.baseVal.width/ (CH.length+0.3); host.scrollTo({left: curBar*colW - host.clientWidth/2 + colW/2, behavior:"smooth"}); }
+    { const sh=document.querySelector(".sheetscroll"); const c=CH[curBar];
+      if(sh&&sh.scrollTo) sh.scrollTo({left: SH.padL+c.bar*SH.colW+c.beat*SH.beatW - sh.clientWidth/2 + SH.colW/2, behavior:"smooth"}); } }
+}
+
+/* ---------------- wiring ---------------- */
+document.getElementById("progSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  document.querySelectorAll("#progSeg button").forEach(x=>x.setAttribute("aria-pressed","false")); b.setAttribute("aria-pressed","true");
+  const wp=playing; if(playing)stopPlay(); progIdx=+b.dataset.prog; curBar=0; rebuild(); selectBar(0,false); if(wp)startPlay();
+  const ss=document.getElementById("songSel"); if(ss)ss.value=""; const sn=document.getElementById("songNote"); if(sn)sn.textContent="";});
+document.getElementById("modeSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  document.querySelectorAll("#modeSeg button").forEach(x=>x.setAttribute("aria-pressed","false")); b.setAttribute("aria-pressed","true");
+  mode=b.dataset.mode; rebuild(); selectBar(curBar,false);
+  document.getElementById("invGroup").style.opacity = mode==="block"?"0.45":"1";}); // anchor inversion only matters in smooth mode
+document.getElementById("invSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  document.querySelectorAll("#invSeg button").forEach(x=>x.setAttribute("aria-pressed","false")); b.setAttribute("aria-pressed","true");
+  startInv=+b.dataset.inv; rebuild(); selectBar(curBar,false);});
+const keySel=document.getElementById("keySel");
+KEYS.forEach((k,i)=>{ const o=document.createElement("option"); o.value=String(i);
+  o.textContent=i===0?"C · as written":k.name; keySel.appendChild(o); });
+keySel.addEventListener("change",()=>{ keyIdx=+keySel.value; rebuild(); selectBar(curBar,false); });
+window.addEventListener("keydown",e=>{
+  if(e.target.matches("input,select,textarea,button")) return;
+  if(e.key==="ArrowRight"){ e.preventDefault(); selectBar(curBar+1); playChord(curBar,showBass); playBarMelody(curBar); }
+  else if(e.key==="ArrowLeft"){ e.preventDefault(); selectBar(curBar-1); playChord(curBar,showBass); playBarMelody(curBar); }
+  else if(e.key===" "){ e.preventDefault(); playing?stopPlay():startPlay(); }
+});
+document.getElementById("play").addEventListener("click",()=>playing?stopPlay():startPlay());
+document.getElementById("prev").addEventListener("click",()=>{selectBar(curBar-1);playChord(curBar,showBass);playBarMelody(curBar);});
+document.getElementById("next").addEventListener("click",()=>{selectBar(curBar+1);playChord(curBar,showBass);playBarMelody(curBar);});
+document.getElementById("bpm").addEventListener("input",e=>{document.getElementById("bpmVal").textContent=e.target.value+" BPM"; if(started)Tone.Transport.bpm.value=+e.target.value;});
+let resizeT=null;
+window.addEventListener("resize",()=>{ clearTimeout(resizeT); resizeT=setTimeout(()=>{renderKeyboard(); buildGraph(); buildSheet();},150); });
+
+/* ---------------- voice control ---------------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const voiceBtn=document.getElementById("voiceBtn");
+const voiceStatus=document.getElementById("voiceStatus");
+let recog=null, voiceOn=false;
+function setVoiceStatus(t){ if(voiceStatus) voiceStatus.textContent=t; }
+function handleCommand(text){
+  const t=" "+text.toLowerCase().trim()+" ";
+  if(/\b(next|forward|advance|ahead)\b/.test(t)){ selectBar(curBar+1); playChord(curBar,showBass); setVoiceStatus("→ next"); }
+  else if(/\b(back|previous|prev|backward)\b/.test(t)){ selectBar(curBar-1); playChord(curBar,showBass); setVoiceStatus("← back"); }
+  else if(/\b(stop|pause|halt)\b/.test(t)){ if(playing) stopPlay(); setVoiceStatus("■ stop"); }
+  else if(/\b(play|go|start)\b/.test(t)){ if(!playing) startPlay(); setVoiceStatus("► play"); }
+  else if(/\b(reset|restart|beginning|start over|first|top)\b/.test(t)){ selectBar(0); setVoiceStatus("⤒ reset"); }
+  else { setVoiceStatus('heard: "'+text.trim()+'"'); }
+}
+function startVoice(){
+  if(!SR){ setVoiceStatus("voice not supported in this browser — try Chrome"); return; }
+  recog=new SR();
+  // single-phrase mode + restart-on-end: continuous=true freezes after a few results in Chrome
+  recog.continuous=false; recog.interimResults=false; recog.lang="en-US"; recog.maxAlternatives=1;
+  recog.onresult=(e)=>{ for(let i=e.resultIndex;i<e.results.length;i++){ if(e.results[i].isFinal) handleCommand(e.results[i][0].transcript); } };
+  recog.onerror=(e)=>{
+    if(e.error==="no-speech"||e.error==="aborted"||e.error==="audio-capture") return; // transient; onend will restart
+    setVoiceStatus("mic error: "+e.error+(e.error==="not-allowed"?" — allow mic, or serve the file (not file://)":""));
+    if(e.error==="not-allowed"||e.error==="service-not-allowed") stopVoice();
+  };
+  recog.onend=()=>{ if(!voiceOn) return; // keep the loop alive: restart after every phrase/timeout
+    try{ recog.start(); }catch(_){ setTimeout(()=>{ if(voiceOn){ try{ recog.start(); }catch(__){} } },180); } };
+  try{
+    recog.start(); voiceOn=true;
+    voiceBtn.textContent="🎙 Listening…"; voiceBtn.classList.add("on");
+    setVoiceStatus("say: next · back · play · stop · reset");
+  }catch(_){ setVoiceStatus("couldn't start the mic"); }
+}
+function stopVoice(){
+  voiceOn=false;
+  if(recog){ recog.onend=null; try{ recog.stop(); }catch(_){} recog=null; }
+  voiceBtn.textContent="🎙 Voice off"; voiceBtn.classList.remove("on"); setVoiceStatus("");
+}
+if(voiceBtn) voiceBtn.addEventListener("click",()=>{ voiceOn?stopVoice():startVoice(); });
+
+/* ---------------- imported songs (chord changes only) ---------------- */
+const IMPORTED=[
+  { name:"Autumn Leaves", note:"Real Book 1 · p.36 · G major (A repeats)", key:"G", specs:[
+    {r:"A",q:"m7",rn:"ii"},{r:"D",q:"dom7",rn:"V7"},{r:"G",q:"maj7",rn:"Imaj7"},{r:"C",q:"maj7",rn:"IVmaj7"},
+    {r:"F#",q:"m7b5",rn:"viiø7"},{r:"B",q:"dom7",rn:"V7/vi"},{r:"E",q:"m7",rn:"vi"},{r:"E",q:"m7",rn:"vi"},
+    {r:"F#",q:"m7b5",rn:"viiø7"},{r:"B",q:"dom7",rn:"V7/vi"},{r:"E",q:"m7",rn:"vi"},{r:"E",q:"m7",rn:"vi"},
+    {r:"A",q:"m7",rn:"ii"},{r:"D",q:"dom7",rn:"V7"},{r:"G",q:"maj7",rn:"Imaj7"},{r:"G",q:"maj7",rn:"Imaj7"},
+    {r:"F#",q:"m7b5",rn:"viiø7"},{r:"B",q:"dom7",rn:"V7/vi"},{r:"E",q:"m7",rn:"vi"},{r:"Eb",q:"dom7",rn:"subV/v"},
+    {r:"D",q:"m7",rn:"v"},{r:"Db",q:"dom7",rn:"subV/IV"},{r:"C",q:"maj7",rn:"IVmaj7"},{r:"B",q:"dom7",rn:"V7/vi"},
+    {r:"E",q:"m7",rn:"vi"} ] },
+  { name:"Blue Bossa", note:"Real Book 1 · p.51 · C minor", key:"Eb", specs:[
+    {r:"C",q:"m7",rn:"i"},{r:"C",q:"m7",rn:"i"},{r:"F",q:"m7",rn:"iv"},{r:"F",q:"m7",rn:"iv"},
+    {r:"D",q:"m7b5",rn:"iiø7"},{r:"G",q:"dom7",rn:"V7"},{r:"C",q:"m7",rn:"i"},{r:"C",q:"m7",rn:"i"},
+    {r:"Eb",q:"m7",rn:"ii/♭II"},{r:"Ab",q:"dom7",rn:"V7/♭II"},{r:"Db",q:"maj7",rn:"♭IImaj7"},{r:"Db",q:"maj7",rn:"♭IImaj7"},
+    {r:"D",q:"m7b5",rn:"iiø7"},{r:"G",q:"dom7",rn:"V7"},{r:"C",q:"m7",rn:"i"},
+    {r:"D",q:"m7b5",rn:"iiø7"},{r:"G",q:"dom7",rn:"V7"} ] },
+  { name:"Sweet Georgia Brown", note:"1925 · Pinkard/Bernie/Casey · PUBLIC DOMAIN · G (original key)", key:"G",
+    // Melody & changes machine-read from the Nottingham Music Database ABC transcription
+    // (abcnotation.com → abc.sourceforge.net/NMD reelsd-g.txt #63, "S:Trad", key G) —
+    // plain-text notation parsed programmatically, no visual transcription involved.
+    specs:[ // beats:4 unless marked — the ABC places mid-bar changes in bars 14, 24, 30, 31
+      {r:"E",q:"dom7",rn:"VI7"},{r:"E",q:"dom7",rn:"VI7"},{r:"E",q:"dom7",rn:"VI7"},{r:"E",q:"dom7",rn:"VI7"},
+      {r:"A",q:"dom7",rn:"II7"},{r:"A",q:"dom7",rn:"II7"},{r:"A",q:"dom7",rn:"II7"},{r:"A",q:"dom7",rn:"II7"},
+      {r:"D",q:"dom7",rn:"V7"},{r:"D",q:"dom7",rn:"V7"},{r:"D",q:"dom7",rn:"V7"},{r:"D",q:"dom7",rn:"V7"},
+      {r:"G",q:"6",rn:"I6"},
+      {r:"G",q:"6",rn:"I6",beats:2},{r:"D",q:"dom7",rn:"V7",beats:2},                       // bar 14
+      {r:"G",q:"6",rn:"I6"},{r:"B",q:"dom7",rn:"V7/vi"},                                    // bars 15-16
+      {r:"E",q:"dom7",rn:"VI7"},{r:"E",q:"dom7",rn:"VI7"},{r:"E",q:"dom7",rn:"VI7"},{r:"E",q:"dom7",rn:"VI7"},
+      {r:"A",q:"dom7",rn:"II7"},{r:"A",q:"dom7",rn:"II7"},{r:"A",q:"dom7",rn:"II7"},
+      {r:"A",q:"dom7",rn:"II7",beats:2},{r:"B",q:"dom7",rn:"V7/vi",beats:2},                // bar 24
+      {r:"E",q:"m6",rn:"vi"},{r:"B",q:"dom7",rn:"V7/vi"},{r:"E",q:"m6",rn:"vi"},{r:"B",q:"dom7",rn:"V7/vi"},
+      {r:"G",q:"6",rn:"I6"},                                                                // bar 29
+      {r:"B",q:"dom7",rn:"V7/vi",beats:2},{r:"E",q:"dom7",rn:"VI7",beats:2},                // bar 30 (chromatic push)
+      {r:"A",q:"dom7",rn:"II7",beats:2},{r:"D",q:"dom7",rn:"V7",beats:2},                   // bar 31
+      {r:"G",q:"6",rn:"I6"}                                                                 // bar 32 → loops to E7
+    ],
+    melody:(()=>{
+      // Exact data from the parsed NMD ABC (L:1/4 → durations in beats). Two cells recur:
+      // rise(a,b,c,p) = "EF ^G3/2E/2" (quarter, quarter, dotted-quarter held, eighth pickup)
+      // and fall(hi,a,b) = "e2 B^G" (half + two quarters descending).
+      const rise=(a,b,c,p)=>[{b:0,d:1,m:a},{b:1,d:1,m:b},{b:2,d:1.5,m:c},{b:3.5,d:.5,m:p}];
+      const fall=(hi,a,b)=>[{b:0,d:2,m:hi},{b:2,d:1,m:a},{b:3,d:1,m:b}];
+      const whole=m=>[{b:0,d:4,m}];
+      return [
+        rise(64,66,68,64),          // 1  E F♯ G♯· E      (No gal made… has)
+        rise(71,68,73,71),          // 2  B G♯ C♯5· B     (got a shade… On)
+        fall(76,71,68),             // 3  E5 B G♯         (Sweet Geor-gia…)
+        whole(64),                  // 4  E4 whole        (Brown)
+        rise(64,66,67,64),          // 5  E F♯ G♮· E
+        rise(71,67,73,69),          // 6  B G♮ C♯5· A
+        fall(76,73,71),             // 7  E5 C♯5 B
+        whole(69),                  // 8  A4 whole
+        rise(62,64,66,62),          // 9  D E F♯· D       (They all sigh… and)
+        rise(69,66,71,69),          // 10 A F♯ B· A       (wan-na die… For)
+        fall(74,69,66),             // 11 D5 A F♯         (Sweet Geor-gia…)
+        whole(62),                  // 12 D4 whole        (Brown)
+        whole(71),                  // 13 B4 whole        (why)
+        [{b:0,d:1,m:71},{b:1,d:1,m:62},{b:2,d:.5,m:64},{b:2.5,d:.5,m:62},{b:3,d:1,m:64}], // 14 you know I don't
+        [{b:0,d:3,m:71},{b:3,d:1,m:71}], // 15 lie… (Not)
+        [{b:0,d:3,m:69},{b:3,d:1,m:71}], // 16 much!
+        rise(64,66,68,64),          // 17 (It's been said… she)
+        rise(71,68,73,71),          // 18 (knocks 'em dead… when she)
+        fall(76,71,68),             // 19 (lands in town)
+        whole(64),                  // 20
+        rise(64,66,67,64),          // 21 (Since she came… why)
+        rise(71,67,73,69),          // 22 (it's a shame… how she)
+        fall(76,73,71),             // 23 (cools 'em down)
+        [{b:0,d:2,m:69},{b:2,d:2,m:71}],                            // 24 A2 B2 (…Fel-lers)
+        [{b:0,d:2,m:71},{b:2,d:2,m:71}],                            // 25 B2 B2 (she can't get)
+        [{b:0,d:1,m:69},{b:1,d:1,m:66},{b:2,d:1,m:71},{b:3,d:1,m:71}], // 26 A F♯ B B
+        [{b:0,d:2,m:71},{b:2,d:2,m:71}],                            // 27
+        [{b:0,d:1,m:69},{b:1,d:1,m:66},{b:2,d:1,m:71},{b:3,d:1,m:71}], // 28
+        [{b:0,d:1,m:62},{b:1,d:1,m:64},{b:2,d:1,m:67},{b:3,d:1,m:69}], // 29 D E G A (Geor-gia claimed her)
+        [{b:0,d:1,m:74},{b:1,d:1,m:75},{b:2,d:1,m:76},{b:3,d:1,m:71}], // 30 D5 D♯5 E5 B (chromatic rise)
+        [{b:0,d:2,m:69},{b:2,d:1,m:74},{b:3,d:1,m:71}],             // 31 A2 D5 B (Sweet Geor-gia)
+        [{b:0,d:3,m:67}]                                             // 32 G4 (Brown — loops to the top)
+      ];})() },
+  { name:"Take the A Train", note:"Real Book 1 · p.421 · C major (AABA)", specs:[
+    {r:"C",q:"maj7",rn:"Imaj7"},{r:"C",q:"maj7",rn:"Imaj7"},{r:"D",q:"dom7",rn:"V7/V"},{r:"D",q:"dom7",rn:"V7/V"},
+    {r:"D",q:"m7",rn:"ii"},{r:"G",q:"dom7",rn:"V7"},{r:"C",q:"maj7",rn:"Imaj7"},{r:"C",q:"maj7",rn:"Imaj7"},
+    {r:"F",q:"maj7",rn:"IVmaj7"},{r:"F",q:"maj7",rn:"IVmaj7"},{r:"F",q:"maj7",rn:"IVmaj7"},{r:"F",q:"maj7",rn:"IVmaj7"},
+    {r:"D",q:"dom7",rn:"V7/V"},{r:"D",q:"dom7",rn:"V7/V"},{r:"D",q:"m7",rn:"ii"},{r:"G",q:"dom7",rn:"V7"} ] }
+];
+const THEORY_TEXT={
+  "Sweet Georgia Brown":{
+    title:"Sweet Georgia Brown — dominants around the circle",
+    body:`Written in 1925 by <b>Maceo Pinkard</b> (with Ben Bernie and Kenneth Casey credited), it's been a jam-session anthem for a century — the Globetrotters' whistled theme, Bird's and Bud Powell's warhorse, and the parent of contrafacts like Miles's "Dig" and Monk's "Bright Mississippi." <b>The composition is public domain in the US.</b><br><br>The whole first half is <b style="color:var(--brass)">nothing but dominant 7ths marching around the circle of fifths</b>: VI7→II7→V7→I (E7→A7→D7→G). Each chord spends four bars pulling into the next — watch the circle panel hop counter-clockwise and the <span style="color:var(--hold)">guide tones slide by half steps</span>. Mid-form there's a wink of a tag (G→D7→G→B7, "you know I don't lie… <i>Not much!</i>"), the second half detours to the relative minor (Em ↔ its dominant B7), and the ending stacks a chromatic push (D–D♯–E over B7→E7) onto the two-beat circle A7→D7→G. The melody is two cells sequenced down the circle with each chord: a rising figure that targets each chord's color tone (G♯ over E7, G♮ over A7, F♯ over D7) and a falling answer from the high octave (E5–B–G♯ → held E; E5–C♯–B → A; D5–A–F♯ → D).<br><br><i>Melody and changes machine-read from the Nottingham Music Database's ABC transcription (trad, key G) — parsed as text, not eyeballed from scans. The 1925 Remick plates (USC Tin Pan Alley IIIF, item 4929) differ in ornamental detail; the ABC reflects the tune as commonly played.</i>`
+  },
+  "Autumn Leaves":{
+    title:"Autumn Leaves — relative major & minor, chained by fifths",
+    body:`Written in 1945 by Hungarian-born composer <b>Joseph Kosma</b> as the French song <i>“Les Feuilles mortes”</i> (poem by Jacques Prévert), it picked up Johnny Mercer's English lyric around 1950 and became one of the most-recorded jazz standards ever — a beginner's rite of passage precisely because its harmony is so clean. This Real Book version sits in <b>G major / E minor</b>.<br><br>The whole tune is a chain of <b style="color:var(--brass)">descending-fifth ii–V motion</b> — watch the circle of fifths step counter-clockwise. The opening is a textbook <b>major ii–V–I</b> in G (Am7→D7→Gmaj7) spilling onto Cmaj7 (IV); the answer is its darker twin, a <b>minor ii–V–i</b> in the relative key of E minor (F#m7♭5→B7→Em7). Setting a bright major ii–V beside a minor one — note the <b>half-diminished ♭5</b> chord and the dominant resolving to a minor chord — is the lesson of the tune. The close sharpens it: Em7–E♭7–Dm7–D♭7–Cmaj7 is a chromatic descent in which <b style="color:var(--brass)">E♭7 and D♭7 are tritone subs</b> greasing the slide, so the <span style="color:var(--hold)">voices barely move</span> and the hand-travel stays low.`
+  },
+  "Blue Bossa":{
+    title:"Blue Bossa — a minor tune that lifts to the Neapolitan",
+    body:`Trumpeter <b>Kenny Dorham</b> wrote “Blue Bossa,” and it debuted on tenor saxophonist Joe Henderson's 1963 Blue Note debut <i>Page One</i> (with McCoy Tyner on piano). It fuses <b>hard-bop with bossa nova</b> — a flavor Dorham had soaked up at the 1961 Rio jazz festival — over a compact <b>16 bars in C minor</b>, which makes it a favorite first tune.<br><br>Home base is the minor <b>i</b> (Cm7), reached through the minor cadence <b style="color:var(--brass)">iiø7–V7–i</b> (Dm7♭5→G7→Cm7); the half-diminished ii and the G7 are what make it sound minor rather than major. The surprise is the middle: a full <b>major ii–V–I</b> (E♭m7→A♭7→D♭maj7) that briefly lifts the music up to <b style="color:var(--brass)">D♭, the ♭II or “Neapolitan”</b> — a half step above the tonic, a classic way to add brightness before the minor ii–V tugs you home. On the circle of fifths you'll see two tidy counter-clockwise runs: one into C minor, one into D♭.`
+  },
+  "Take the A Train":{
+    title:"Take the A Train — the famous II7 lift",
+    body:`<b>Billy Strayhorn</b> wrote it in 1939 from the subway directions Duke Ellington gave him to reach his house — “take the A train” up to Harlem. It sat in a drawer until a 1941 licensing fight (ASCAP vs. BMI) forced Ellington to commission a whole new book from the BMI-registered Strayhorn; “A” Train then became the orchestra's <b>signature tune</b> for the rest of Ellington's life. It's a 32-bar <b>AABA in C major</b>.<br><br>The hook is one chord. Where you'd expect a plain ii (Dm7) in bars 3–4, Strayhorn writes <b style="color:var(--brass)">D7 — a II7, i.e. V7/V</b>, the dominant of the dominant — and colors it with a raised 11th (the written D7♭5), giving that bright, slightly suspended <b>lift</b>. It resolves normally through ii–V (Dm7→G7) back to I. The bridge just moves up to <b>IV (Fmaj7)</b> and runs the same V7/V → ii → V7 trick to get home. Because the roots still travel mostly by fifths, the <span style="color:var(--hold)">inner voices glide</span> — the lowest hand-travel of these three.`
+  }
+};
+const songSel=document.getElementById("songSel"), songNote=document.getElementById("songNote");
+IMPORTED.forEach((s,i)=>{ const o=document.createElement("option"); o.value=String(i); o.textContent=s.name; songSel.appendChild(o); });
+songSel.addEventListener("change",()=>{
+  const v=songSel.value; if(v===""){ return; }
+  const song=IMPORTED[+v];
+  if(song._idx===undefined){ song._idx=SPECS.push(song.specs)-1; } // append once, no permanent button
+  THEORY[song._idx]=THEORY_TEXT[song.name];
+  SONGKEY[song._idx]=song.key||"C";
+  MELODIES[song._idx]=song.melody||null;
+  if(playing) stopPlay();
+  document.querySelectorAll("#progSeg button").forEach(x=>x.setAttribute("aria-pressed","false"));
+  songNote.textContent=song.note;
+  progIdx=song._idx; curBar=0; rebuild(); selectBar(0,false);
+});
+
+/* ---------------- boot ---------------- */
+rebuild(); renderKeyboard(); selectBar(0,false);
+</script>
+</body>
+</html>
