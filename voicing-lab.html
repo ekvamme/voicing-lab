@@ -314,12 +314,15 @@ const NAT={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 function spell(l,pc){let d=((pc-NAT[l])%12+12)%12;if(d>6)d-=12;return l+(d>0?"#".repeat(d):d<0?"b".repeat(-d):"");}
 function noteMidi(n,o){let s=NAT[n[0]];for(const c of n.slice(1))s+=(c==="#"?1:-1);return (o+1)*12+s;}
 function midiToName(m){const s=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];return s[((m%12)+12)%12]+(Math.floor(m/12)-1);}
-const QUAL={maj7:[0,4,7,11],m7:[0,3,7,10],dom7:[0,4,7,10],m7b5:[0,3,6,10],"6":[0,4,7,9],m6:[0,3,7,9],aug7:[0,4,8,10],"7#11":[0,4,6,10]};
-const QLAB={maj7:"maj7",m7:"m7",dom7:"7",m7b5:"m7♭5","6":"6",m6:"m6",aug7:"7♯5","7#11":"7♯11"};
-// letter steps from the root letter for each chord tone (6th chords use the 6th; 7♯11 the raised 4th in place of the 5th)
-const QLET={maj7:[0,2,4,6],m7:[0,2,4,6],dom7:[0,2,4,6],m7b5:[0,2,4,6],"6":[0,2,4,5],m6:[0,2,4,5],aug7:[0,2,4,6],"7#11":[0,2,3,6]};
+const QUAL={maj7:[0,4,7,11],m7:[0,3,7,10],dom7:[0,4,7,10],m7b5:[0,3,6,10],"6":[0,4,7,9],m6:[0,3,7,9],aug7:[0,4,8,10],"7#11":[0,4,6,10],"7b9":[0,4,10,13]};
+const QLAB={maj7:"maj7",m7:"m7",dom7:"7",m7b5:"m7♭5","6":"6",m6:"m6",aug7:"7♯5","7#11":"7♯11","7b9":"7♭9"};
+// letter steps from the root letter for each chord tone (6th chords use the 6th; 7♯11 the raised
+// 4th in place of the 5th; 7♭9 stacks R-3-♭7-♭9 with the ♭9 on top)
+const QLET={maj7:[0,2,4,6],m7:[0,2,4,6],dom7:[0,2,4,6],m7b5:[0,2,4,6],"6":[0,2,4,5],m6:[0,2,4,5],aug7:[0,2,4,6],"7#11":[0,2,3,6],"7b9":[0,2,6,8]};
 const ROLE_NAME=["root","3rd","5th","7th"];
-const roleNames=q=>(q==="6"||q==="m6")?["root","3rd","5th","6th"]:(q==="7#11")?["root","3rd","♯11","7th"]:ROLE_NAME;
+const roleNames=q=>(q==="6"||q==="m6")?["root","3rd","5th","6th"]
+  :(q==="7#11")?["root","3rd","♯11","7th"]
+  :(q==="7b9")?["root","3rd","7th","♭9"]:ROLE_NAME;
 const INV=["Root position","1st inversion","2nd inversion","3rd inversion"];
 const INV_SHORT=["Root","1st","2nd","3rd"];
 
@@ -771,7 +774,8 @@ const SCALES={
   m6:{name:"Dorian", iv:[0,2,3,5,7,9,10], avoid:[]},
   m7b5:{name:"Locrian", iv:[0,1,3,5,6,8,10], avoid:[1]},
   aug7:{name:"whole-tone", iv:[0,2,4,6,8,10], avoid:[]},
-  "7#11":{name:"Lydian dominant", iv:[0,2,4,6,7,9,10], avoid:[]}
+  "7#11":{name:"Lydian dominant", iv:[0,2,4,6,7,9,10], avoid:[]},
+  "7b9":{name:"half-whole diminished", iv:[0,1,3,4,6,7,9,10], avoid:[]}
 };
 function lightScale(){
   clearKeys();
@@ -1140,6 +1144,40 @@ const IMPORTED=[
         [{b:0,d:4,m:65}],                                             // 31 F whole
         [{b:0,d:2,m:65}]                                              // 32 F (rest → top)
       ];})() },
+  { name:"Black Orpheus", note:"Manhã de Carnaval · Bonfá 1959 · A minor · AA′B · changes only (© until 2054)", key:"C",
+    // Chords machine-read from the openbook fake-book transcription (github.com/veltzer/
+    // openbook, a_day_in_the_life_of_a_fool.ly.mako, chordmode only — the melody is
+    // copyrighted and is NOT included). Simplifications: plain minor triads voiced as m6
+    // (idiomatic bossa tonic color; the chart itself ends on Am6), slash-bass bars
+    // (Dm/C, Am/G) merged — the engine picks its own inversions.
+    specs:(()=>{
+      const i={r:"A",q:"m6",rn:"i6"}, iiV=[{r:"B",q:"m7b5",rn:"iiø7",beats:2},{r:"E",q:"7b9",rn:"V7♭9",beats:2}],
+            iiVW=[{r:"B",q:"m7b5",rn:"iiø7"},{r:"E",q:"7b9",rn:"V7♭9"}];
+      return [
+        // A (16 bars)
+        i,...iiV, i,...iiV, i,
+        {r:"D",q:"m7",rn:"iv7",beats:2},{r:"G",q:"dom7",rn:"V7/III",beats:2},
+        {r:"C",q:"maj7",rn:"IIImaj7"},
+        {r:"E",q:"m7b5",rn:"iiø7/iv",beats:2},{r:"A",q:"7b9",rn:"V7♭9/iv",beats:2},
+        {r:"D",q:"m7",rn:"iv7"},{r:"G",q:"dom7",rn:"V7/III"},
+        {r:"C",q:"maj7",rn:"IIImaj7"},{r:"F",q:"maj7",rn:"VImaj7"},
+        ...iiVW, i, ...iiV,
+        // A' (16 bars)
+        i,...iiV, i,...iiV,
+        {r:"E",q:"m7b5",rn:"iiø7/iv"},{r:"A",q:"7b9",rn:"V7♭9/iv"},
+        {r:"D",q:"m6",rn:"iv6"},{r:"D",q:"m6",rn:"iv6"},{r:"D",q:"m6",rn:"iv6"},   // 23-25 (Dm/C merged)
+        ...iiV,
+        {r:"A",q:"m6",rn:"i6"},                                                     // 27 (Am/G merged)
+        {r:"F",q:"maj7",rn:"VImaj7"},
+        {r:"B",q:"m7b5",rn:"iiø7"},{r:"E",q:"dom7",rn:"V7"},                        // 29-30 (plain E7 here)
+        {r:"A",q:"m6",rn:"i6",beats:2},{r:"D",q:"m7",rn:"iv7",beats:2},             // 31
+        i,
+        // B (5-bar tag)
+        {r:"D",q:"m7",rn:"iv7",beats:2},{r:"A",q:"m7",rn:"i7",beats:2},
+        {r:"D",q:"m7",rn:"iv7",beats:2},{r:"A",q:"m7",rn:"i7",beats:2},
+        {r:"D",q:"m7",rn:"iv7",beats:2},{r:"E",q:"m7",rn:"v7",beats:2},
+        i, i                                                                        // 36-37 Am6 held
+      ];})() },
   { name:"Take the A Train", note:"Real Book 1 · p.421 · C major · full 32-bar AABA (changes only)", key:"C",
     // Beat-accurate rebuild: turnarounds split their measures (Dm7·G7 in bars 8/32, the
     // C7 pickup into the bridge in 16), and the signature chord is voiced as written —
@@ -1175,6 +1213,10 @@ const THEORY_TEXT={
   "Blue Bossa":{
     title:"Blue Bossa — a minor tune that lifts to the Neapolitan",
     body:`Trumpeter <b>Kenny Dorham</b> wrote “Blue Bossa,” and it debuted on tenor saxophonist Joe Henderson's 1963 Blue Note debut <i>Page One</i> (with McCoy Tyner on piano). It fuses <b>hard-bop with bossa nova</b> — a flavor Dorham had soaked up at the 1961 Rio jazz festival — over a compact <b>16 bars in C minor</b>, which makes it a favorite first tune.<br><br>Home base is the minor <b>i</b> (Cm7), reached through the minor cadence <b style="color:var(--brass)">iiø7–V7–i</b> (Dm7♭5→G7→Cm7); the half-diminished ii and the G7 are what make it sound minor rather than major. The surprise is the middle: a full <b>major ii–V–I</b> (E♭m7→A♭7→D♭maj7) that briefly lifts the music up to <b style="color:var(--brass)">D♭, the ♭II or “Neapolitan”</b> — a half step above the tonic, a classic way to add brightness before the minor ii–V tugs you home. On the circle of fifths you'll see two tidy counter-clockwise runs: one into C minor, one into D♭.`
+  },
+  "Black Orpheus":{
+    title:"Black Orpheus — the minor ii–V, distilled",
+    body:`<b>Luiz Bonfá</b> wrote "Manhã de Carnaval" for the 1959 film <i>Black Orpheus</i>; it became the tune that taught the world the <b>minor ii–V–i</b>. (The composition is under copyright until 2054, so the app shows the chord changes only — no melody.)<br><br>The whole song is built from one cell: <b style="color:var(--brass)">Bm7♭5 → E7♭9 → Am</b>, the half-diminished ii, the dominant with its ♭9 darkening, and the minor home — usually two beats each, so the harmony breathes in short sighs. Watch the <span style="color:var(--hold)">♭9 (F) fall a half step to E</span> every time V resolves. Twice per chorus the tune slips into the <b>relative major</b> the smooth way: iv7→V7/III→Cmaj7 (a major ii–V hiding inside the minor key), and the A′ section leans on the subdominant with its own ii–V (Em7♭5→A7♭9→Dm). The closing tag rocks iv7↔i7 like a held breath before settling on <b>Am6</b> — the classic bossa ending color.<br><br><i>Changes machine-read from the openbook fake-book transcription (chordmode only). Plain minor triads voiced as m6; slash-bass bars merged — the engine chooses inversions itself.</i>`
   },
   "Take the A Train":{
     title:"Take the A Train — the famous II7 lift",
